@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeTrack - Punch In/Out</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="header-title">⏰ TimeTrack</div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link active">Punch Clock</a>
+                <a href="/admin" class="nav-link">Admin</a>
+                <a href="/reports" class="nav-link">Reports</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="alertContainer"></div>
+
+        <!-- Current Punch Status -->
+        <div id="punchStatus" class="hidden"></div>
+
+        <!-- Punch Form -->
+        <div class="card">
+            <div class="card-header">Time Entry</div>
+            
+            <form id="punchForm">
+                <div class="form-group">
+                    <label for="staffSelect">Staff Member *</label>
+                    <select id="staffSelect" required>
+                        <option value="">Select staff member...</option>
+                    </select>
+                </div>
+
+                <div id="punchInFields">
+                    <div class="form-group">
+                        <label for="clientSelect">Client *</label>
+                        <select id="clientSelect" required>
+                            <option value="">Select client...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="officeSelect">Office Location *</label>
+                        <select id="officeSelect" required>
+                            <option value="">Select office...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="workDescription">Work Description</label>
+                    <textarea id="workDescription" placeholder="Describe the work being performed..."></textarea>
+                </div>
+
+                <div id="buttonContainer">
+                    <button type="submit" id="punchInBtn" class="btn btn-success btn-large btn-block">
+                        🟢 Punch In
+                    </button>
+                    <button type="button" id="punchOutBtn" class="btn btn-danger btn-large btn-block hidden">
+                        🔴 Punch Out
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Currently Punched In Staff -->
+        <div class="card">
+            <div class="card-header">Currently Punched In</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Staff Name</th>
+                            <th>Client</th>
+                            <th>Office</th>
+                            <th>Time Started</th>
+                            <th>Current Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody id="punchedInList">
+                        <tr>
+                            <td colspan="5" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '/api';
+        let currentStaffId = null;
+        let isPunchedIn = false;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDropdowns();
+            loadPunchedInStaff();
+            setupEventListeners();
+            
+            // Refresh punched in list every 30 seconds
+            setInterval(loadPunchedInStaff, 30000);
+        });
+
+        function setupEventListeners() {
+            document.getElementById('staffSelect').addEventListener('change', checkStaffStatus);
+            document.getElementById('punchForm').addEventListener('submit', handlePunchIn);
+            document.getElementById('punchOutBtn').addEventListener('click', handlePunchOut);
+        }
+
+        async function loadDropdowns() {
+            try {
+                const [staffRes, clientsRes, officesRes] = await Promise.all([
+                    fetch(`${API_BASE}/staff`),
+                    fetch(`${API_BASE}/clients`),
+                    fetch(`${API_BASE}/offices`)
+                ]);
+
+                const staff = await staffRes.json();
+                const clients = await clientsRes.json();
+                const offices = await officesRes.json();
+
+                // Populate staff dropdown
+                const staffSelect = document.getElementById('staffSelect');
+                staff.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.StaffID;
+                    option.textContent = `${s.StaffName} - ${s.LocationName}`;
+                    staffSelect.appendChild(option);
+                });
+
+                // Populate clients dropdown
+                const clientSelect = document.getElementById('clientSelect');
+                clients.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.ClientID;
+                    option.textContent = c.ClientName;
+                    clientSelect.appendChild(option);
+                });
+
+                // Populate offices dropdown
+                const officeSelect = document.getElementById('officeSelect');
+                offices.forEach(o => {
+                    const option = document.createElement('option');
+                    option.value = o.OfficeLocationID;
+                    option.textContent = o.LocationName;
+                    officeSelect.appendChild(option);
+                });
+            } catch (error) {
+                showAlert('Failed to load data: ' + error.message, 'error');
+            }
+        }
+
+        async function checkStaffStatus() {
+            const staffId = document.getElementById('staffSelect').value;
+            if (!staffId) {
+                resetPunchForm();
+                return;
+            }
+
+            currentStaffId = staffId;
+
+            try {
+                const response = await fetch(`${API_BASE}/staff/${staffId}/punch-status`);
+                const data = await response.json();
+
+                if (data.isPunchedIn) {
+                    showPunchedInStatus(data.currentEntry);
+                } else {
+                    showPunchInForm();
+                }
+            } catch (error) {
+                showAlert('Failed to check staff status: ' + error.message, 'error');
+            }
+        }
+
+        function showPunchedInStatus(entry) {
+            isPunchedIn = true;
+            
+            // Hide punch in fields
+            document.getElementById('punchInFields').classList.add('hidden');
+            document.getElementById('punchInBtn').classList.add('hidden');
+            document.getElementById('punchOutBtn').classList.remove('hidden');
+
+            // Show status
+            const statusDiv = document.getElementById('punchStatus');
+            statusDiv.className = 'punch-status';
+            statusDiv.innerHTML = `
+                <h2>Currently Punched In</h2>
+                <div class="current-time" id="currentHours">${entry.CurrentHours.toFixed(2)} hours</div>
+                <p>Started at ${new Date(entry.TimeStarted).toLocaleTimeString()}</p>
+            `;
+            statusDiv.classList.remove('hidden');
+
+            // Update hours every minute
+            if (window.hoursInterval) clearInterval(window.hoursInterval);
+            window.hoursInterval = setInterval(() => {
+                const started = new Date(entry.TimeStarted);
+                const now = new Date();
+                const hours = (now - started) / (1000 * 60 * 60);
+                document.getElementById('currentHours').textContent = hours.toFixed(2) + ' hours';
+            }, 60000);
+        }
+
+        function showPunchInForm() {
+            isPunchedIn = false;
+            
+            // Show punch in fields
+            document.getElementById('punchInFields').classList.remove('hidden');
+            document.getElementById('punchInBtn').classList.remove('hidden');
+            document.getElementById('punchOutBtn').classList.add('hidden');
+            document.getElementById('punchStatus').classList.add('hidden');
+
+            if (window.hoursInterval) {
+                clearInterval(window.hoursInterval);
+            }
+        }
+
+        function resetPunchForm() {
+            currentStaffId = null;
+            isPunchedIn = false;
+            document.getElementById('punchInFields').classList.remove('hidden');
+            document.getElementById('punchInBtn').classList.remove('hidden');
+            document.getElementById('punchOutBtn').classList.add('hidden');
+            document.getElementById('punchStatus').classList.add('hidden');
+        }
+
+        async function handlePunchIn(e) {
+            e.preventDefault();
+
+            const staffId = document.getElementById('staffSelect').value;
+            const clientId = document.getElementById('clientSelect').value;
+            const officeLocationId = document.getElementById('officeSelect').value;
+            const workDescription = document.getElementById('workDescription').value;
+
+            if (!staffId || !clientId || !officeLocationId) {
+                showAlert('Please fill in all required fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/time-entries/punch-in`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        staffId: parseInt(staffId),
+                        clientId: parseInt(clientId),
+                        officeLocationId: parseInt(officeLocationId),
+                        workDescription
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Punched in successfully!', 'success');
+                    checkStaffStatus();
+                    loadPunchedInStaff();
+                } else {
+                    showAlert(data.message || data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to punch in: ' + error.message, 'error');
+            }
+        }
+
+        async function handlePunchOut() {
+            if (!currentStaffId) return;
+
+            const workDescription = document.getElementById('workDescription').value;
+
+            if (!confirm('Are you sure you want to punch out?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/time-entries/punch-out`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        staffId: parseInt(currentStaffId),
+                        workDescription
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Punched out successfully!', 'success');
+                    document.getElementById('workDescription').value = '';
+                    checkStaffStatus();
+                    loadPunchedInStaff();
+                } else {
+                    showAlert(data.message || data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to punch out: ' + error.message, 'error');
+            }
+        }
+
+        async function loadPunchedInStaff() {
+            try {
+                const response = await fetch(`${API_BASE}/time-entries/punched-in`);
+                const data = await response.json();
+
+                const tbody = document.getElementById('punchedInList');
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No one currently punched in</td></tr>';
+                } else {
+                    tbody.innerHTML = data.map(entry => `
+                        <tr>
+                            <td>${entry.StaffName}</td>
+                            <td>${entry.ClientName}</td>
+                            <td>${entry.LocationName}</td>
+                            <td>${new Date(entry.TimeStarted).toLocaleString()}</td>
+                            <td><strong>${entry.CurrentHours.toFixed(2)}</strong> hours</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load punched in staff:', error);
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+

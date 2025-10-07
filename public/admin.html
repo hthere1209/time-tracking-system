@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeTrack - Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="header-title">⏰ TimeTrack - Admin</div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link">Punch Clock</a>
+                <a href="/admin" class="nav-link active">Admin</a>
+                <a href="/reports" class="nav-link">Reports</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="alertContainer"></div>
+
+        <!-- Dashboard Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Punched In Now</div>
+                <div class="stat-value" id="statPunchedIn">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Today's Hours</div>
+                <div class="stat-value" id="statTodayHours">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">This Week Hours</div>
+                <div class="stat-value" id="statWeekHours">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">This Month Revenue</div>
+                <div class="stat-value" id="statMonthRevenue">-</div>
+            </div>
+        </div>
+
+        <!-- Today's Time Entries -->
+        <div class="card">
+            <div class="flex-between mb-2">
+                <div class="card-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">Today's Time Entries</div>
+                <button class="btn btn-primary" onclick="refreshTodayEntries()">🔄 Refresh</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Staff</th>
+                            <th>Client</th>
+                            <th>Office</th>
+                            <th>Started</th>
+                            <th>Finished</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="todayEntriesList">
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    Loading...
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Management Sections -->
+        <div class="card">
+            <div class="card-header">Quick Management</div>
+            <div class="flex flex-gap" style="flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="showModal('staffModal')">➕ Add Staff</button>
+                <button class="btn btn-primary" onclick="showModal('clientModal')">➕ Add Client</button>
+                <button class="btn btn-primary" onclick="showModal('officeModal')">➕ Add Office</button>
+                <button class="btn btn-secondary" onclick="viewAllStaff()">👥 View All Staff</button>
+                <button class="btn btn-secondary" onclick="viewAllClients()">🏢 View All Clients</button>
+            </div>
+        </div>
+
+        <!-- All Staff Table (Hidden by default) -->
+        <div id="allStaffSection" class="card hidden">
+            <div class="card-header">All Staff Members</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Office Location</th>
+                            <th>Cost Rate</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allStaffList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- All Clients Table (Hidden by default) -->
+        <div id="allClientsSection" class="card hidden">
+            <div class="card-header">All Clients</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Billing Rate</th>
+                            <th>Contact Person</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allClientsList"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Adding Staff -->
+    <div id="staffModal" class="modal-overlay hidden" onclick="hideModalOnOverlay(event, 'staffModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="card">
+                <div class="card-header">Add New Staff Member</div>
+                <form id="staffForm" onsubmit="handleAddStaff(event)">
+                    <div class="form-group">
+                        <label for="staffName">Name *</label>
+                        <input type="text" id="staffName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffOffice">Office Location *</label>
+                        <select id="staffOffice" required>
+                            <option value="">Select office...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffCostRate">Cost Rate ($/hour) *</label>
+                        <input type="number" id="staffCostRate" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffEmail">Email</label>
+                        <input type="email" id="staffEmail">
+                    </div>
+                    <div class="flex flex-gap">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideModal('staffModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Client -->
+    <div id="clientModal" class="modal-overlay hidden" onclick="hideModalOnOverlay(event, 'clientModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="card">
+                <div class="card-header">Add New Client</div>
+                <form id="clientForm" onsubmit="handleAddClient(event)">
+                    <div class="form-group">
+                        <label for="clientName">Client Name *</label>
+                        <input type="text" id="clientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientBillingRate">Billing Rate ($/hour) *</label>
+                        <input type="number" id="clientBillingRate" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientContact">Contact Person</label>
+                        <input type="text" id="clientContact">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientEmail">Email</label>
+                        <input type="email" id="clientEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientPhone">Phone</label>
+                        <input type="tel" id="clientPhone">
+                    </div>
+                    <div class="flex flex-gap">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideModal('clientModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Office -->
+    <div id="officeModal" class="modal-overlay hidden" onclick="hideModalOnOverlay(event, 'officeModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="card">
+                <div class="card-header">Add New Office Location</div>
+                <form id="officeForm" onsubmit="handleAddOffice(event)">
+                    <div class="form-group">
+                        <label for="officeName">Location Name *</label>
+                        <input type="text" id="officeName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="officeAddress">Address</label>
+                        <textarea id="officeAddress"></textarea>
+                    </div>
+                    <div class="flex flex-gap">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideModal('officeModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardStats();
+            refreshTodayEntries();
+            loadOfficesForModal();
+            
+            // Refresh every 30 seconds
+            setInterval(() => {
+                loadDashboardStats();
+                refreshTodayEntries();
+            }, 30000);
+        });
+
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch(`${API_BASE}/reports/dashboard-stats`);
+                const data = await response.json();
+
+                document.getElementById('statPunchedIn').textContent = data.currentlyPunchedIn;
+                document.getElementById('statTodayHours').textContent = (data.today.TotalHours || 0).toFixed(1);
+                document.getElementById('statWeekHours').textContent = (data.thisWeek.TotalHours || 0).toFixed(1);
+                document.getElementById('statMonthRevenue').textContent = '$' + (data.thisMonth.TotalRevenue || 0).toFixed(0);
+            } catch (error) {
+                console.error('Failed to load dashboard stats:', error);
+            }
+        }
+
+        async function refreshTodayEntries() {
+            try {
+                const response = await fetch(`${API_BASE}/time-entries/today`);
+                const entries = await response.json();
+
+                const tbody = document.getElementById('todayEntriesList');
+                
+                if (entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center">No entries for today</td></tr>';
+                } else {
+                    tbody.innerHTML = entries.map(entry => `
+                        <tr>
+                            <td>${entry.StaffName}</td>
+                            <td>${entry.ClientName}</td>
+                            <td>${entry.LocationName}</td>
+                            <td>${new Date(entry.TimeStarted).toLocaleTimeString()}</td>
+                            <td>${entry.TimeFinished ? new Date(entry.TimeFinished).toLocaleTimeString() : '-'}</td>
+                            <td><strong>${entry.Hours.toFixed(2)}</strong></td>
+                            <td><span class="status-badge status-${entry.IsPunchedIn ? 'punched-in' : 'completed'}">${entry.Status}</span></td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="viewEntry(${entry.TimeEntryID})">View</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load today\'s entries:', error);
+                showAlert('Failed to load today\'s entries', 'error');
+            }
+        }
+
+        async function viewAllStaff() {
+            try {
+                const response = await fetch(`${API_BASE}/staff`);
+                const staff = await response.json();
+
+                // Get full details for each staff member (including cost rate)
+                const detailedStaff = await Promise.all(
+                    staff.map(s => fetch(`${API_BASE}/staff/${s.StaffID}`).then(r => r.json()))
+                );
+
+                const tbody = document.getElementById('allStaffList');
+                tbody.innerHTML = detailedStaff.map(s => `
+                    <tr>
+                        <td>${s.StaffName}</td>
+                        <td>${s.LocationName}</td>
+                        <td>$${s.CostRate.toFixed(2)}/hr</td>
+                        <td>${s.Email || '-'}</td>
+                        <td><span class="status-badge ${s.IsActive ? 'status-punched-in' : 'status-completed'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('allStaffSection').classList.remove('hidden');
+            } catch (error) {
+                showAlert('Failed to load staff: ' + error.message, 'error');
+            }
+        }
+
+        async function viewAllClients() {
+            try {
+                const response = await fetch(`${API_BASE}/clients`);
+                const clients = await response.json();
+
+                // Get full details for each client (including billing rate)
+                const detailedClients = await Promise.all(
+                    clients.map(c => fetch(`${API_BASE}/clients/${c.ClientID}`).then(r => r.json()))
+                );
+
+                const tbody = document.getElementById('allClientsList');
+                tbody.innerHTML = detailedClients.map(c => `
+                    <tr>
+                        <td>${c.ClientName}</td>
+                        <td>$${c.BillingRate.toFixed(2)}/hr</td>
+                        <td>${c.ContactPerson || '-'}</td>
+                        <td>${c.Email || '-'}</td>
+                        <td>${c.Phone || '-'}</td>
+                        <td><span class="status-badge ${c.IsActive ? 'status-punched-in' : 'status-completed'}">${c.IsActive ? 'Active' : 'Inactive'}</span></td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('allClientsSection').classList.remove('hidden');
+            } catch (error) {
+                showAlert('Failed to load clients: ' + error.message, 'error');
+            }
+        }
+
+        async function loadOfficesForModal() {
+            try {
+                const response = await fetch(`${API_BASE}/offices`);
+                const offices = await response.json();
+
+                const select = document.getElementById('staffOffice');
+                offices.forEach(o => {
+                    const option = document.createElement('option');
+                    option.value = o.OfficeLocationID;
+                    option.textContent = o.LocationName;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load offices:', error);
+            }
+        }
+
+        async function handleAddStaff(e) {
+            e.preventDefault();
+
+            const data = {
+                staffName: document.getElementById('staffName').value,
+                officeLocationId: parseInt(document.getElementById('staffOffice').value),
+                costRate: parseFloat(document.getElementById('staffCostRate').value),
+                email: document.getElementById('staffEmail').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/staff`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Staff member added successfully!', 'success');
+                    hideModal('staffModal');
+                    document.getElementById('staffForm').reset();
+                } else {
+                    showAlert(result.error || 'Failed to add staff member', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function handleAddClient(e) {
+            e.preventDefault();
+
+            const data = {
+                clientName: document.getElementById('clientName').value,
+                billingRate: parseFloat(document.getElementById('clientBillingRate').value),
+                contactPerson: document.getElementById('clientContact').value,
+                email: document.getElementById('clientEmail').value,
+                phone: document.getElementById('clientPhone').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/clients`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Client added successfully!', 'success');
+                    hideModal('clientModal');
+                    document.getElementById('clientForm').reset();
+                } else {
+                    showAlert(result.error || 'Failed to add client', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function handleAddOffice(e) {
+            e.preventDefault();
+
+            const data = {
+                locationName: document.getElementById('officeName').value,
+                address: document.getElementById('officeAddress').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/offices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Office location added successfully!', 'success');
+                    hideModal('officeModal');
+                    document.getElementById('officeForm').reset();
+                    loadOfficesForModal(); // Refresh the office dropdown
+                } else {
+                    showAlert(result.error || 'Failed to add office location', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function viewEntry(entryId) {
+            alert(`View entry ${entryId} - Full editing features can be added here`);
+        }
+
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function hideModalOnOverlay(event, modalId) {
+            if (event.target.classList.contains('modal-overlay')) {
+                hideModal(modalId);
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+

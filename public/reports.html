@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeTrack - Reports</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="header-title">⏰ TimeTrack - Reports</div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link">Punch Clock</a>
+                <a href="/admin" class="nav-link">Admin</a>
+                <a href="/reports" class="nav-link active">Reports</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="alertContainer"></div>
+
+        <!-- Report Selection -->
+        <div class="card">
+            <div class="card-header">Generate Report</div>
+            
+            <div class="form-group">
+                <label for="reportType">Report Type</label>
+                <select id="reportType" onchange="handleReportTypeChange()">
+                    <option value="">Select a report...</option>
+                    <option value="staff-work">Staff Work Report</option>
+                    <option value="client-billing">Client Billing Report (Detailed)</option>
+                    <option value="client-summary">Client Billing Summary</option>
+                    <option value="date-range">Date Range Hours Report</option>
+                </select>
+            </div>
+
+            <div id="reportFilters" class="hidden">
+                <div class="form-group">
+                    <label for="startDate">Start Date *</label>
+                    <input type="date" id="startDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="endDate">End Date *</label>
+                    <input type="date" id="endDate" required>
+                </div>
+
+                <div id="staffFilter" class="form-group hidden">
+                    <label for="staffSelect">Staff Member (Optional)</label>
+                    <select id="staffSelect">
+                        <option value="">All Staff</option>
+                    </select>
+                </div>
+
+                <div id="clientFilter" class="form-group hidden">
+                    <label for="clientSelect">Client (Optional)</label>
+                    <select id="clientSelect">
+                        <option value="">All Clients</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary btn-large" onclick="generateReport()">📊 Generate Report</button>
+            </div>
+        </div>
+
+        <!-- Report Results -->
+        <div id="reportResults" class="hidden">
+            <!-- Staff Work Report -->
+            <div id="staffWorkReport" class="card hidden">
+                <div class="flex-between mb-2">
+                    <div class="card-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">Staff Work Report</div>
+                    <button class="btn btn-secondary" onclick="exportToCSV('staffWorkReport')">📥 Export CSV</button>
+                </div>
+                <p id="staffReportDateRange" class="mb-2" style="color: var(--gray-600);"></p>
+                
+                <div class="table-container">
+                    <table id="staffWorkTable">
+                        <thead>
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Office</th>
+                                <th>Client</th>
+                                <th>Entries</th>
+                                <th>Total Hours</th>
+                                <th>Cost Rate</th>
+                                <th>Total Cost</th>
+                                <th>Billing Rate</th>
+                                <th>Total Revenue</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffWorkBody"></tbody>
+                        <tfoot id="staffWorkFooter"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Client Billing Report -->
+            <div id="clientBillingReport" class="card hidden">
+                <div class="flex-between mb-2">
+                    <div class="card-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">Client Billing Report</div>
+                    <button class="btn btn-secondary" onclick="exportToCSV('clientBillingReport')">📥 Export CSV</button>
+                </div>
+                <p id="clientReportDateRange" class="mb-2" style="color: var(--gray-600);"></p>
+                
+                <div class="table-container">
+                    <table id="clientBillingTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Staff</th>
+                                <th>Office</th>
+                                <th>Service Description</th>
+                                <th>Hours</th>
+                                <th>Cost</th>
+                                <th>Billable Amount</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientBillingBody"></tbody>
+                        <tfoot id="clientBillingFooter"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Client Summary Report -->
+            <div id="clientSummaryReport" class="card hidden">
+                <div class="flex-between mb-2">
+                    <div class="card-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">Client Billing Summary</div>
+                    <button class="btn btn-secondary" onclick="exportToCSV('clientSummaryReport')">📥 Export CSV</button>
+                </div>
+                <p id="summaryReportDateRange" class="mb-2" style="color: var(--gray-600);"></p>
+                
+                <div class="table-container">
+                    <table id="clientSummaryTable">
+                        <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th>Billing Rate</th>
+                                <th>Total Entries</th>
+                                <th>Total Hours</th>
+                                <th>Total Cost</th>
+                                <th>Total Billable</th>
+                                <th>Total Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientSummaryBody"></tbody>
+                        <tfoot id="clientSummaryFooter"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Date Range Report -->
+            <div id="dateRangeReport" class="card hidden">
+                <div class="flex-between mb-2">
+                    <div class="card-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">Hours by Employee & Customer</div>
+                    <button class="btn btn-secondary" onclick="exportToCSV('dateRangeReport')">📥 Export CSV</button>
+                </div>
+                <p id="dateRangeReportRange" class="mb-2" style="color: var(--gray-600);"></p>
+                
+                <div class="table-container">
+                    <table id="dateRangeTable">
+                        <thead>
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Client Name</th>
+                                <th>Number of Entries</th>
+                                <th>Total Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dateRangeBody"></tbody>
+                        <tfoot id="dateRangeFooter"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '/api';
+        let currentReportData = [];
+        let currentReportType = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDropdowns();
+            setDefaultDates();
+        });
+
+        function setDefaultDates() {
+            const today = new Date();
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            document.getElementById('startDate').valueAsDate = firstDayOfMonth;
+            document.getElementById('endDate').valueAsDate = today;
+        }
+
+        async function loadDropdowns() {
+            try {
+                const [staffRes, clientsRes] = await Promise.all([
+                    fetch(`${API_BASE}/staff`),
+                    fetch(`${API_BASE}/clients`)
+                ]);
+
+                const staff = await staffRes.json();
+                const clients = await clientsRes.json();
+
+                const staffSelect = document.getElementById('staffSelect');
+                staff.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.StaffID;
+                    option.textContent = s.StaffName;
+                    staffSelect.appendChild(option);
+                });
+
+                const clientSelect = document.getElementById('clientSelect');
+                clients.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.ClientID;
+                    option.textContent = c.ClientName;
+                    clientSelect.appendChild(option);
+                });
+            } catch (error) {
+                showAlert('Failed to load dropdowns: ' + error.message, 'error');
+            }
+        }
+
+        function handleReportTypeChange() {
+            const reportType = document.getElementById('reportType').value;
+            const filtersDiv = document.getElementById('reportFilters');
+            const staffFilter = document.getElementById('staffFilter');
+            const clientFilter = document.getElementById('clientFilter');
+
+            if (!reportType) {
+                filtersDiv.classList.add('hidden');
+                return;
+            }
+
+            filtersDiv.classList.remove('hidden');
+            staffFilter.classList.add('hidden');
+            clientFilter.classList.add('hidden');
+
+            if (reportType === 'staff-work') {
+                staffFilter.classList.remove('hidden');
+            } else if (reportType === 'client-billing') {
+                clientFilter.classList.remove('hidden');
+            }
+        }
+
+        async function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!reportType || !startDate || !endDate) {
+                showAlert('Please select report type and date range', 'error');
+                return;
+            }
+
+            currentReportType = reportType;
+
+            try {
+                let url = `${API_BASE}/reports/${reportType}?startDate=${startDate}&endDate=${endDate}`;
+                
+                if (reportType === 'staff-work') {
+                    const staffId = document.getElementById('staffSelect').value;
+                    if (staffId) url += `&staffId=${staffId}`;
+                } else if (reportType === 'client-billing') {
+                    const clientId = document.getElementById('clientSelect').value;
+                    if (clientId) url += `&clientId=${clientId}`;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to generate report');
+                }
+
+                currentReportData = data;
+
+                // Hide all report sections
+                document.querySelectorAll('#reportResults .card').forEach(el => el.classList.add('hidden'));
+                document.getElementById('reportResults').classList.remove('hidden');
+
+                // Format date range
+                const dateRangeText = `Date Range: ${formatDate(startDate)} to ${formatDate(endDate)}`;
+
+                // Display appropriate report
+                switch (reportType) {
+                    case 'staff-work':
+                        displayStaffWorkReport(data, dateRangeText);
+                        break;
+                    case 'client-billing':
+                        displayClientBillingReport(data, dateRangeText);
+                        break;
+                    case 'client-summary':
+                        displayClientSummaryReport(data, dateRangeText);
+                        break;
+                    case 'date-range':
+                        displayDateRangeReport(data, dateRangeText);
+                        break;
+                }
+            } catch (error) {
+                showAlert('Error generating report: ' + error.message, 'error');
+            }
+        }
+
+        function displayStaffWorkReport(data, dateRange) {
+            document.getElementById('staffWorkReport').classList.remove('hidden');
+            document.getElementById('staffReportDateRange').textContent = dateRange;
+
+            const tbody = document.getElementById('staffWorkBody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">No data found for selected criteria</td></tr>';
+                document.getElementById('staffWorkFooter').innerHTML = '';
+                return;
+            }
+
+            let totalEntries = 0, totalHours = 0, totalCost = 0, totalRevenue = 0, totalProfit = 0;
+
+            tbody.innerHTML = data.map(row => {
+                totalEntries += row.NumberOfEntries;
+                totalHours += row.TotalHours;
+                totalCost += row.TotalCost;
+                totalRevenue += row.TotalRevenue;
+                totalProfit += row.TotalProfit;
+
+                return `
+                    <tr>
+                        <td>${row.StaffName}</td>
+                        <td>${row.OfficeLocation}</td>
+                        <td>${row.ClientName}</td>
+                        <td>${row.NumberOfEntries}</td>
+                        <td>${row.TotalHours.toFixed(2)}</td>
+                        <td>$${row.StaffCostRate.toFixed(2)}</td>
+                        <td>$${row.TotalCost.toFixed(2)}</td>
+                        <td>$${row.ClientBillingRate.toFixed(2)}</td>
+                        <td>$${row.TotalRevenue.toFixed(2)}</td>
+                        <td>$${row.TotalProfit.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('staffWorkFooter').innerHTML = `
+                <tr>
+                    <td colspan="3"><strong>TOTALS</strong></td>
+                    <td><strong>${totalEntries}</strong></td>
+                    <td><strong>${totalHours.toFixed(2)}</strong></td>
+                    <td></td>
+                    <td><strong>$${totalCost.toFixed(2)}</strong></td>
+                    <td></td>
+                    <td><strong>$${totalRevenue.toFixed(2)}</strong></td>
+                    <td><strong>$${totalProfit.toFixed(2)}</strong></td>
+                </tr>
+            `;
+        }
+
+        function displayClientBillingReport(data, dateRange) {
+            document.getElementById('clientBillingReport').classList.remove('hidden');
+            document.getElementById('clientReportDateRange').textContent = dateRange;
+
+            const tbody = document.getElementById('clientBillingBody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">No data found for selected criteria</td></tr>';
+                document.getElementById('clientBillingFooter').innerHTML = '';
+                return;
+            }
+
+            let totalHours = 0, totalCost = 0, totalBillable = 0, totalProfit = 0;
+
+            tbody.innerHTML = data.map(row => {
+                totalHours += row.Hours;
+                totalCost += row.ServiceCost;
+                totalBillable += row.BillableAmount;
+                totalProfit += row.Profit;
+
+                return `
+                    <tr>
+                        <td>${formatDate(row.WorkDate)}</td>
+                        <td>${row.ClientName}</td>
+                        <td>${row.StaffName}</td>
+                        <td>${row.OfficeLocation}</td>
+                        <td>${row.ServiceDescription || '-'}</td>
+                        <td>${row.Hours.toFixed(2)}</td>
+                        <td>$${row.ServiceCost.toFixed(2)}</td>
+                        <td>$${row.BillableAmount.toFixed(2)}</td>
+                        <td>$${row.Profit.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('clientBillingFooter').innerHTML = `
+                <tr>
+                    <td colspan="5"><strong>TOTALS</strong></td>
+                    <td><strong>${totalHours.toFixed(2)}</strong></td>
+                    <td><strong>$${totalCost.toFixed(2)}</strong></td>
+                    <td><strong>$${totalBillable.toFixed(2)}</strong></td>
+                    <td><strong>$${totalProfit.toFixed(2)}</strong></td>
+                </tr>
+            `;
+        }
+
+        function displayClientSummaryReport(data, dateRange) {
+            document.getElementById('clientSummaryReport').classList.remove('hidden');
+            document.getElementById('summaryReportDateRange').textContent = dateRange;
+
+            const tbody = document.getElementById('clientSummaryBody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No data found for selected criteria</td></tr>';
+                document.getElementById('clientSummaryFooter').innerHTML = '';
+                return;
+            }
+
+            let totalEntries = 0, totalHours = 0, totalCost = 0, totalBillable = 0, totalProfit = 0;
+
+            tbody.innerHTML = data.map(row => {
+                totalEntries += row.TotalEntries;
+                totalHours += row.TotalHours;
+                totalCost += row.TotalCost;
+                totalBillable += row.TotalBillableAmount;
+                totalProfit += row.TotalProfit;
+
+                return `
+                    <tr>
+                        <td>${row.ClientName}</td>
+                        <td>$${row.BillingRate.toFixed(2)}</td>
+                        <td>${row.TotalEntries}</td>
+                        <td>${row.TotalHours.toFixed(2)}</td>
+                        <td>$${row.TotalCost.toFixed(2)}</td>
+                        <td>$${row.TotalBillableAmount.toFixed(2)}</td>
+                        <td>$${row.TotalProfit.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('clientSummaryFooter').innerHTML = `
+                <tr>
+                    <td colspan="2"><strong>TOTALS</strong></td>
+                    <td><strong>${totalEntries}</strong></td>
+                    <td><strong>${totalHours.toFixed(2)}</strong></td>
+                    <td><strong>$${totalCost.toFixed(2)}</strong></td>
+                    <td><strong>$${totalBillable.toFixed(2)}</strong></td>
+                    <td><strong>$${totalProfit.toFixed(2)}</strong></td>
+                </tr>
+            `;
+        }
+
+        function displayDateRangeReport(data, dateRange) {
+            document.getElementById('dateRangeReport').classList.remove('hidden');
+            document.getElementById('dateRangeReportRange').textContent = dateRange;
+
+            const tbody = document.getElementById('dateRangeBody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No data found for selected criteria</td></tr>';
+                document.getElementById('dateRangeFooter').innerHTML = '';
+                return;
+            }
+
+            let totalEntries = 0, totalHours = 0;
+
+            tbody.innerHTML = data.map(row => {
+                totalEntries += row.Entries;
+                totalHours += row.TotalHours;
+
+                return `
+                    <tr>
+                        <td>${row.StaffName}</td>
+                        <td>${row.ClientName}</td>
+                        <td>${row.Entries}</td>
+                        <td>${row.TotalHours.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('dateRangeFooter').innerHTML = `
+                <tr>
+                    <td colspan="2"><strong>TOTALS</strong></td>
+                    <td><strong>${totalEntries}</strong></td>
+                    <td><strong>${totalHours.toFixed(2)}</strong></td>
+                </tr>
+            `;
+        }
+
+        function exportToCSV(reportId) {
+            const table = document.querySelector(`#${reportId} table`);
+            if (!table) return;
+
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td, th');
+                const rowData = Array.from(cells).map(cell => {
+                    let text = cell.textContent.trim();
+                    // Escape quotes and wrap in quotes if contains comma
+                    text = text.replace(/"/g, '""');
+                    if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+                        text = `"${text}"`;
+                    }
+                    return text;
+                });
+                csv.push(rowData.join(','));
+            });
+
+            const csvContent = csv.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentReportType}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            showAlert('Report exported successfully!', 'success');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+
