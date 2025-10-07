@@ -241,7 +241,7 @@
 
         async function checkAuthAndLoadData() {
             try {
-                const response = await fetch(`${API_BASE}/auth/check`);
+                const response = await fetch(`${API_BASE}/auth/check`, { credentials: 'include' });
                 const data = await response.json();
                 
                 if (!data.authenticated) {
@@ -250,7 +250,7 @@
                 }
 
                 // Check if user is admin
-                if (data.user.role !== 'admin') {
+                if (!data.user.role || data.user.role.toLowerCase() !== 'admin') {
                     window.location.href = '/users';
                     return;
                 }
@@ -268,7 +268,8 @@
         async function handleSignOut() {
             try {
                 const response = await fetch(`${API_BASE}/auth/signout`, {
-                    method: 'POST'
+                    method: 'POST',
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -286,7 +287,7 @@
 
         async function loadDashboardStats() {
             try {
-                const response = await fetch(`${API_BASE}/reports/dashboard-stats`);
+                const response = await fetch(`${API_BASE}/reports/dashboard-stats`, { credentials: 'include' });
                 const data = await response.json();
 
                 document.getElementById('statPunchedIn').textContent = data.currentlyPunchedIn;
@@ -300,7 +301,7 @@
 
         async function refreshTodayEntries() {
             try {
-                const response = await fetch(`${API_BASE}/time-entries/today`);
+                const response = await fetch(`${API_BASE}/time-entries/today`, { credentials: 'include' });
                 const entries = await response.json();
 
                 const tbody = document.getElementById('todayEntriesList');
@@ -331,12 +332,12 @@
 
         async function viewAllStaff() {
             try {
-                const response = await fetch(`${API_BASE}/staff`);
+                const response = await fetch(`${API_BASE}/staff`, { credentials: 'include' });
                 const staff = await response.json();
 
                 // Get full details for each staff member (including cost rate)
                 const detailedStaff = await Promise.all(
-                    staff.map(s => fetch(`${API_BASE}/staff/${s.StaffID}`).then(r => r.json()))
+                    staff.map(s => fetch(`${API_BASE}/staff/${s.StaffID}`, { credentials: 'include' }).then(r => r.json()))
                 );
 
                 const tbody = document.getElementById('allStaffList');
@@ -359,12 +360,12 @@
 
         async function viewAllClients() {
             try {
-                const response = await fetch(`${API_BASE}/clients`);
+                const response = await fetch(`${API_BASE}/clients`, { credentials: 'include' });
                 const clients = await response.json();
 
                 // Get full details for each client (including billing rate)
                 const detailedClients = await Promise.all(
-                    clients.map(c => fetch(`${API_BASE}/clients/${c.ClientID}`).then(r => r.json()))
+                    clients.map(c => fetch(`${API_BASE}/clients/${c.ClientID}`, { credentials: 'include' }).then(r => r.json()))
                 );
 
                 const tbody = document.getElementById('allClientsList');
@@ -388,7 +389,7 @@
 
         async function loadOfficesForModal() {
             try {
-                const response = await fetch(`${API_BASE}/offices`);
+                const response = await fetch(`${API_BASE}/offices`, { credentials: 'include' });
                 const offices = await response.json();
 
                 const select = document.getElementById('staffOffice');
@@ -417,6 +418,7 @@
                 const response = await fetch(`${API_BASE}/staff`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(data)
                 });
 
@@ -449,6 +451,7 @@
                 const response = await fetch(`${API_BASE}/clients`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(data)
                 });
 
@@ -478,6 +481,7 @@
                 const response = await fetch(`${API_BASE}/offices`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(data)
                 });
 
@@ -507,7 +511,8 @@
 
             try {
                 const response = await fetch(`${API_BASE}/staff/${staffId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 const result = await response.json();
@@ -530,7 +535,8 @@
 
             try {
                 const response = await fetch(`${API_BASE}/clients/${clientId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 const result = await response.json();
@@ -553,7 +559,8 @@
 
             try {
                 const response = await fetch(`${API_BASE}/time-entries/${entryId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 const result = await response.json();

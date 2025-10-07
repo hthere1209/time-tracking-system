@@ -195,7 +195,7 @@
 
         async function checkAuthAndLoadData() {
             try {
-                const response = await fetch(`${API_BASE}/auth/check`);
+                const response = await fetch(`${API_BASE}/auth/check`, { credentials: 'include' });
                 const data = await response.json();
                 
                 if (!data.authenticated) {
@@ -204,7 +204,7 @@
                 }
 
                 // Check if user is admin
-                if (data.user.role !== 'admin') {
+                if (!data.user.role || data.user.role.toLowerCase() !== 'admin') {
                     window.location.href = '/users';
                     return;
                 }
@@ -221,7 +221,8 @@
         async function handleSignOut() {
             try {
                 const response = await fetch(`${API_BASE}/auth/signout`, {
-                    method: 'POST'
+                    method: 'POST',
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -248,8 +249,8 @@
         async function loadDropdowns() {
             try {
                 const [staffRes, clientsRes] = await Promise.all([
-                    fetch(`${API_BASE}/staff`),
-                    fetch(`${API_BASE}/clients`)
+                    fetch(`${API_BASE}/staff`, { credentials: 'include' }),
+                    fetch(`${API_BASE}/clients`, { credentials: 'include' })
                 ]);
 
                 const staff = await staffRes.json();
@@ -320,7 +321,7 @@
                     if (clientId) url += `&clientId=${clientId}`;
                 }
 
-                const response = await fetch(url);
+                const response = await fetch(url, { credentials: 'include' });
                 const data = await response.json();
 
                 if (!response.ok) {

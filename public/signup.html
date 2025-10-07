@@ -127,12 +127,12 @@
 
         async function checkAuthStatus() {
             try {
-                const response = await fetch(`${API_BASE}/auth/check`);
+                const response = await fetch(`${API_BASE}/auth/check`, { credentials: 'include' });
                 const data = await response.json();
                 
                 if (data.authenticated) {
                     // Redirect based on role
-                    if (data.user.role === 'admin') {
+                    if (data.user.role && data.user.role.toLowerCase() === 'admin') {
                         window.location.href = '/admin';
                     } else {
                         window.location.href = '/users';
@@ -167,6 +167,7 @@
                 const response = await fetch(`${API_BASE}/auth/signup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ username, email, password })
                 });
 

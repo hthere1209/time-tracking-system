@@ -83,13 +83,13 @@ router.post('/signin', async (req, res) => {
 
         const pool = await getConnection();
         
-        // Get user by username
+        // Get user by username or email
         const result = await pool.request()
-            .input('username', sql.NVarChar, username)
+            .input('usernameOrEmail', sql.NVarChar, username)
             .query(`
                 SELECT UserID, Username, Email, PasswordHash, Role, IsActive
                 FROM Users 
-                WHERE Username = @username
+                WHERE Username = @usernameOrEmail OR Email = @usernameOrEmail
             `);
 
         if (result.recordset.length === 0) {

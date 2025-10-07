@@ -9,7 +9,7 @@
     "seed": "node -e \"require('./seed').seedDatabase().then(() => process.exit(0)).catch(err => { console.error(err); process.exit(1); })\"",
     "seed-admin": "node -e \"require('./seed').seedAdminUser().then(() => process.exit(0)).catch(err => { console.error(err); process.exit(1); })\"",
     "reset-admin-password": "node scripts/reset-admin-password.js",
-    "fix-users-table": "node scripts/fix-users-table.js"
+    "reset-all-passwords": "node scripts/reset-all-passwords.js"
   },
   "keywords": [
     "timetracking",

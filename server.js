@@ -61,7 +61,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve the main application pages
-app.get('/', (req, res) => {
+// Punch clock - accessible to all authenticated users
+app.get('/', checkAuth, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

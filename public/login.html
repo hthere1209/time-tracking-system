@@ -82,15 +82,14 @@
 
             <form id="loginForm">
                 <div class="form-group">
+                    <label for="username">Username or Email</label>
+                    <input type="text" id="username" placeholder="Enter your username or email" required autofocus>
+                </div>
+
+                <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" placeholder="Enter your password" required>
                 </div>
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" placeholder="Enter your username" required autofocus>
-                </div>
-
-                
 
                 <button type="submit" class="btn btn-primary btn-block">Sign In</button>
             </form>
@@ -111,12 +110,12 @@
 
         async function checkAuthStatus() {
             try {
-                const response = await fetch(`${API_BASE}/auth/check`);
+                const response = await fetch(`${API_BASE}/auth/check`, { credentials: 'include' });
                 const data = await response.json();
                 
                 if (data.authenticated) {
                     // Redirect based on role
-                    if (data.user.role === 'admin') {
+                    if (data.user.role && data.user.role.toLowerCase() === 'admin') {
                         window.location.href = '/admin';
                     } else {
                         window.location.href = '/users';
@@ -137,6 +136,7 @@
                 const response = await fetch(`${API_BASE}/auth/signin`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ username, password })
                 });
 
@@ -147,7 +147,7 @@
                     
                     // Redirect based on role
                     setTimeout(() => {
-                        if (data.user.role === 'admin') {
+                        if (data.user.role && data.user.role.toLowerCase() === 'admin') {
                             window.location.href = '/admin';
                         } else {
                             window.location.href = '/users';

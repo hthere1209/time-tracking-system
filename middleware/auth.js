@@ -11,7 +11,7 @@ function requireAuth(req, res, next) {
 
 // Check if user is an admin
 function requireAdmin(req, res, next) {
-    if (req.session && req.session.user && req.session.user.role === 'admin') {
+    if (req.session && req.session.user && req.session.user.role && req.session.user.role.toLowerCase() === 'admin') {
         next();
     } else {
         res.status(403).json({ error: 'Admin access required' });
@@ -29,7 +29,7 @@ function checkAuth(req, res, next) {
 
 // Check if user is admin (for serving HTML pages)
 function checkAdmin(req, res, next) {
-    if (req.session && req.session.user && req.session.user.role === 'admin') {
+    if (req.session && req.session.user && req.session.user.role && req.session.user.role.toLowerCase() === 'admin') {
         next();
     } else {
         res.redirect('/users');

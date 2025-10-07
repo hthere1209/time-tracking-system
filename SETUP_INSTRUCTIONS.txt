@@ -32,11 +32,24 @@ STEP 3: LOGIN
 
 Go to: http://localhost:3000/login.html
 
-Default Admin Account (auto-created):
+CURRENT USER CREDENTIALS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ADMIN ACCOUNT:
   Username: admin
   Password: admin123
+  Access: Full (Admin + Reports + Users + Punch Clock)
+
+REGULAR USERS:
+  Username: manager        Username: test
+  Password: manager123     Password: test123
+  Access: Users + Punch    Access: Users + Punch
+
+  Username: cheetah
+  Password: cheetah123
+  Access: Users + Punch
   
-⚠️ CHANGE THIS PASSWORD AFTER FIRST LOGIN!
+⚠️ CHANGE THESE PASSWORDS AFTER FIRST LOGIN!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 WHAT'S DIFFERENT NOW?

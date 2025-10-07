@@ -125,7 +125,7 @@
 
         async function checkAuthStatus() {
             try {
-                const response = await fetch(`${API_BASE}/auth/check`);
+                const response = await fetch(`${API_BASE}/auth/check`, { credentials: 'include' });
                 const data = await response.json();
                 
                 if (!data.authenticated) {
@@ -134,7 +134,7 @@
                 }
 
                 // If admin tries to access users page, redirect to admin
-                if (data.user.role === 'admin') {
+                if (data.user.role && data.user.role.toLowerCase() === 'admin') {
                     window.location.href = '/admin';
                     return;
                 }
@@ -149,7 +149,7 @@
 
         async function refreshTodayEntries() {
             try {
-                const response = await fetch(`${API_BASE}/time-entries/today`);
+                const response = await fetch(`${API_BASE}/time-entries/today`, { credentials: 'include' });
                 const entries = await response.json();
 
                 const tbody = document.getElementById('todayEntriesList');
@@ -177,7 +177,7 @@
 
         async function viewAllStaff() {
             try {
-                const response = await fetch(`${API_BASE}/staff`);
+                const response = await fetch(`${API_BASE}/staff`, { credentials: 'include' });
                 const staff = await response.json();
 
                 const tbody = document.getElementById('allStaffList');
@@ -198,7 +198,7 @@
 
         async function viewAllClients() {
             try {
-                const response = await fetch(`${API_BASE}/clients`);
+                const response = await fetch(`${API_BASE}/clients`, { credentials: 'include' });
                 const clients = await response.json();
 
                 const tbody = document.getElementById('allClientsList');
@@ -221,7 +221,8 @@
         async function handleSignOut() {
             try {
                 const response = await fetch(`${API_BASE}/auth/signout`, {
-                    method: 'POST'
+                    method: 'POST',
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
