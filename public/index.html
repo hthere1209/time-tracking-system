@@ -150,7 +150,7 @@
                 const officeSelect = document.getElementById('officeSelect');
                 offices.forEach(o => {
                     const option = document.createElement('option');
-                    option.value = o.OfficeLocationID;
+                    option.value = o.LocationID;
                     option.textContent = o.LocationName;
                     officeSelect.appendChild(option);
                 });

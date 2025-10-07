@@ -118,9 +118,9 @@
                         <tr>
                             <th>Name</th>
                             <th>Billing Rate</th>
-                            <th>Contact Person</th>
                             <th>Email</th>
                             <th>Phone</th>
+                            <th>Address</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -178,16 +178,16 @@
                         <input type="number" id="clientBillingRate" step="0.01" min="0" required>
                     </div>
                     <div class="form-group">
-                        <label for="clientContact">Contact Person</label>
-                        <input type="text" id="clientContact">
-                    </div>
-                    <div class="form-group">
-                        <label for="clientEmail">Email</label>
+                        <label for="clientEmail">Contact Email</label>
                         <input type="email" id="clientEmail">
                     </div>
                     <div class="form-group">
-                        <label for="clientPhone">Phone</label>
+                        <label for="clientPhone">Contact Phone</label>
                         <input type="tel" id="clientPhone">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientAddress">Address</label>
+                        <textarea id="clientAddress"></textarea>
                     </div>
                     <div class="flex flex-gap">
                         <button type="submit" class="btn btn-primary">Save</button>
@@ -296,7 +296,7 @@
                     <tr>
                         <td>${s.StaffName}</td>
                         <td>${s.LocationName}</td>
-                        <td>$${s.CostRate.toFixed(2)}/hr</td>
+                        <td>$${s.HourlyCostRate.toFixed(2)}/hr</td>
                         <td>${s.Email || '-'}</td>
                         <td><span class="status-badge ${s.IsActive ? 'status-punched-in' : 'status-completed'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
                     </tr>
@@ -322,10 +322,10 @@
                 tbody.innerHTML = detailedClients.map(c => `
                     <tr>
                         <td>${c.ClientName}</td>
-                        <td>$${c.BillingRate.toFixed(2)}/hr</td>
-                        <td>${c.ContactPerson || '-'}</td>
-                        <td>${c.Email || '-'}</td>
-                        <td>${c.Phone || '-'}</td>
+                        <td>$${c.HourlyBillingRate.toFixed(2)}/hr</td>
+                        <td>${c.ContactEmail || '-'}</td>
+                        <td>${c.ContactPhone || '-'}</td>
+                        <td>${c.Address || '-'}</td>
                         <td><span class="status-badge ${c.IsActive ? 'status-punched-in' : 'status-completed'}">${c.IsActive ? 'Active' : 'Inactive'}</span></td>
                     </tr>
                 `).join('');
@@ -344,7 +344,7 @@
                 const select = document.getElementById('staffOffice');
                 offices.forEach(o => {
                     const option = document.createElement('option');
-                    option.value = o.OfficeLocationID;
+                    option.value = o.LocationID;
                     option.textContent = o.LocationName;
                     select.appendChild(option);
                 });
@@ -390,9 +390,9 @@
             const data = {
                 clientName: document.getElementById('clientName').value,
                 billingRate: parseFloat(document.getElementById('clientBillingRate').value),
-                contactPerson: document.getElementById('clientContact').value,
-                email: document.getElementById('clientEmail').value,
-                phone: document.getElementById('clientPhone').value
+                contactEmail: document.getElementById('clientEmail').value,
+                contactPhone: document.getElementById('clientPhone').value,
+                address: document.getElementById('clientAddress').value
             };
 
             try {

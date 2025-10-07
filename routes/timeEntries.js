@@ -134,7 +134,7 @@ router.get('/punched-in', async (req, res) => {
 router.post('/punch-in', async (req, res) => {
     try {
         const { staffId, clientId, officeLocationId, workDescription } = req.body;
-        
+        console.log(req.body);
         if (!staffId || !clientId || !officeLocationId) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
