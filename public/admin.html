@@ -13,7 +13,7 @@
 <body>
     <header>
         <div class="header-container">
-            <div class="header-title">⏰ TimeTrack - Admin</div>
+            <div class="header-title"><i class="fas fa-clock"></i>TimeTrack - Admin</div>
             <nav class="nav-links">
                 <a href="/" class="nav-link">Punch Clock</a>
                 <a href="/admin" class="nav-link active">Admin</a>
@@ -100,7 +100,7 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Office Location</th>
+                            <th>Role</th>
                             <th>Cost Rate</th>
                             <th>Email</th>
                             <th>Status</th>
@@ -145,10 +145,8 @@
                         <input type="text" id="staffName" required>
                     </div>
                     <div class="form-group">
-                        <label for="staffOffice">Office Location *</label>
-                        <select id="staffOffice" required>
-                            <option value="">Select office...</option>
-                        </select>
+                        <label for="staffRole">Role *</label>
+                        <input type="text" id="staffRole" placeholder="e.g., Developer, Manager, Consultant" required>
                     </div>
                     <div class="form-group">
                         <label for="staffCostRate">Cost Rate ($/hour) *</label>
@@ -259,7 +257,6 @@
                 // Load admin dashboard
                 loadDashboardStats();
                 refreshTodayEntries();
-                loadOfficesForModal();
             } catch (error) {
                 console.error('Error checking auth:', error);
                 window.location.href = '/login.html';
@@ -345,7 +342,7 @@
                 tbody.innerHTML = detailedStaff.map(s => `
                     <tr>
                         <td>${s.StaffName}</td>
-                        <td>${s.LocationName}</td>
+                        <td>${s.StaffRole}</td>
                         <td>$${s.HourlyCostRate.toFixed(2)}/hr</td>
                         <td>${s.Email || '-'}</td>
                         <td><span class="status-badge ${s.IsActive ? 'status-punched-in' : 'status-completed'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
@@ -413,7 +410,7 @@
 
             const data = {
                 staffName: document.getElementById('staffName').value,
-                officeLocationId: parseInt(document.getElementById('staffOffice').value),
+                staffRole: document.getElementById('staffRole').value,
                 costRate: parseFloat(document.getElementById('staffCostRate').value),
                 email: document.getElementById('staffEmail').value
             };

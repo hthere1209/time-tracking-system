@@ -35,12 +35,11 @@ GO
 CREATE TABLE Staff (
     StaffID INT IDENTITY(1,1) PRIMARY KEY,
     StaffName NVARCHAR(100) NOT NULL,
-    OfficeLocationID INT NOT NULL,
-    CostRate DECIMAL(10,2) NOT NULL, -- Hidden field: cost per hour
+    StaffRole NVARCHAR(100) NOT NULL,
+    HourlyCostRate DECIMAL(10,2) NOT NULL, -- Hidden field: cost per hour
     Email NVARCHAR(100),
     IsActive BIT DEFAULT 1,
-    CreatedDate DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (OfficeLocationID) REFERENCES OfficeLocations(OfficeLocationID)
+    CreatedDate DATETIME DEFAULT GETDATE()
 );
 GO
 

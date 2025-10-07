@@ -10,12 +10,12 @@ INSERT INTO OfficeLocations (LocationName, Address) VALUES
 GO
 
 -- Insert Staff Members
-INSERT INTO Staff (StaffName, OfficeLocationID, CostRate, Email) VALUES
-('John Smith', 1, 35.00, 'john.smith@company.com'),
-('Sarah Johnson', 1, 42.00, 'sarah.johnson@company.com'),
-('Mike Williams', 2, 38.00, 'mike.williams@company.com'),
-('Emily Davis', 2, 45.00, 'emily.davis@company.com'),
-('Robert Brown', 3, 40.00, 'robert.brown@company.com');
+INSERT INTO Staff (StaffName, StaffRole, HourlyCostRate, Email) VALUES
+('John Smith', 'Developer', 35.00, 'john.smith@company.com'),
+('Sarah Johnson', 'Senior Developer', 42.00, 'sarah.johnson@company.com'),
+('Mike Williams', 'Project Manager', 38.00, 'mike.williams@company.com'),
+('Emily Davis', 'Team Lead', 45.00, 'emily.davis@company.com'),
+('Robert Brown', 'Consultant', 40.00, 'robert.brown@company.com');
 GO
 
 -- Insert Clients

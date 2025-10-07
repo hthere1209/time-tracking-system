@@ -11,12 +11,10 @@ router.get('/', async (req, res) => {
                 SELECT 
                     s.StaffID,
                     s.StaffName,
-                    s.DefaultLocationID,
-                    ol.LocationName,
+                    s.StaffRole,
                     s.Email,
                     s.IsActive
                 FROM Staff s
-                INNER JOIN OfficeLocations ol ON s.DefaultLocationID = ol.LocationID
                 WHERE s.IsActive = 1
                 ORDER BY s.StaffName
             `);
@@ -37,14 +35,12 @@ router.get('/:id', async (req, res) => {
                 SELECT 
                     s.StaffID,
                     s.StaffName,
-                    s.DefaultLocationID,
-                    ol.LocationName,
+                    s.StaffRole,
                     s.HourlyCostRate,
                     s.Email,
                     s.IsActive,
                     s.CreatedDate
                 FROM Staff s
-                INNER JOIN OfficeLocations ol ON s.DefaultLocationID = ol.LocationID
                 WHERE s.StaffID = @staffId
             `);
         
@@ -62,22 +58,22 @@ router.get('/:id', async (req, res) => {
 // Create new staff member
 router.post('/', async (req, res) => {
     try {
-        const { staffName, officeLocationId, costRate, email } = req.body;
+        const { staffName, staffRole, costRate, email } = req.body;
         
-        if (!staffName || !officeLocationId || !costRate) {
+        if (!staffName || !staffRole || !costRate) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         
         const pool = await getConnection();
         const result = await pool.request()
             .input('staffName', sql.NVarChar, staffName)
-            .input('officeLocationId', sql.Int, officeLocationId)
+            .input('staffRole', sql.NVarChar, staffRole)
             .input('costRate', sql.Decimal(10, 2), costRate)
             .input('email', sql.NVarChar, email || null)
             .query(`
-                INSERT INTO Staff (StaffName, DefaultLocationID, HourlyCostRate, Email)
+                INSERT INTO Staff (StaffName, StaffRole, HourlyCostRate, Email)
                 OUTPUT INSERTED.StaffID
-                VALUES (@staffName, @officeLocationId, @costRate, @email)
+                VALUES (@staffName, @staffRole, @costRate, @email)
             `);
         
         res.status(201).json({ 
@@ -93,20 +89,20 @@ router.post('/', async (req, res) => {
 // Update staff member
 router.put('/:id', async (req, res) => {
     try {
-        const { staffName, officeLocationId, costRate, email, isActive } = req.body;
+        const { staffName, staffRole, costRate, email, isActive } = req.body;
         
         const pool = await getConnection();
         await pool.request()
             .input('staffId', sql.Int, req.params.id)
             .input('staffName', sql.NVarChar, staffName)
-            .input('officeLocationId', sql.Int, officeLocationId)
+            .input('staffRole', sql.NVarChar, staffRole)
             .input('costRate', sql.Decimal(10, 2), costRate)
             .input('email', sql.NVarChar, email || null)
             .input('isActive', sql.Bit, isActive !== undefined ? isActive : 1)
             .query(`
                 UPDATE Staff
                 SET StaffName = @staffName,
-                    DefaultLocationID = @officeLocationId,
+                    StaffRole = @staffRole,
                     HourlyCostRate = @costRate,
                     Email = @email,
                     IsActive = @isActive

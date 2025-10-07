@@ -198,7 +198,7 @@
                     if (isAdmin || emailMatches) {
                         const option = document.createElement('option');
                         option.value = s.StaffID;
-                        option.textContent = `${s.StaffName} - ${s.LocationName}`;
+                        option.textContent = `${s.StaffName} - ${s.StaffRole}`;
                         staffSelect.appendChild(option);
                     }
                 });

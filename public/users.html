@@ -6,6 +6,7 @@
     <title>Users - TimeTrack</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
@@ -15,7 +16,8 @@
     <header>
         <div class="container">
             <div class="flex-between">
-                <div class="header-title">⏰ TimeTrack - Users</div>
+                <div class="header-title"><i class="fas fa-clock"></i>TimeTrack - Admin</div>
+
                 <nav>
                     <a href="/" class="nav-link">Punch Clock</a>
                     <a href="/users" class="nav-link active">Users</a>
@@ -35,7 +37,7 @@
         <div class="card">
             <div class="flex-between mb-2">
                 <div class="card-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">Today's Time Entries</div>
-                <button class="btn btn-primary" onclick="refreshTodayEntries()">🔄 Refresh</button>
+                <button class="btn btn-primary" onclick="refreshTodayEntries()"><i class="fas fa-refresh"></i> Refresh</button>
             </div>
             <div class="table-container">
                 <table>
@@ -68,8 +70,8 @@
         <div class="card">
             <div class="card-header">Quick Actions</div>
             <div class="flex flex-gap" style="flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="viewAllStaff()">👥 View All Staff</button>
-                <button class="btn btn-primary" onclick="viewAllClients()">🏢 View All Clients</button>
+                <button class="btn btn-primary" onclick="viewAllStaff()"><i class="fas fa-users"></i>  View All Staff</button>
+                <button class="btn btn-primary" onclick="viewAllClients()"><i class="fas fa-users"></i> View All Clients</button>
             </div>
         </div>
 
@@ -179,7 +181,7 @@
             try {
                 const response = await fetch(`${API_BASE}/staff`, { credentials: 'include' });
                 const staff = await response.json();
-
+                document.getElementById("allClientsSection").style.display = "none";
                 const tbody = document.getElementById('allStaffList');
                 tbody.innerHTML = staff.map(s => `
                     <tr>
@@ -189,6 +191,7 @@
                         <td><span class="status-badge ${s.IsActive ? 'status-punched-in' : 'status-completed'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
                     </tr>
                 `).join('');
+                document.getElementById("allStaffSection").style.display = "block";
 
                 document.getElementById('allStaffSection').classList.remove('hidden');
             } catch (error) {
@@ -200,6 +203,7 @@
             try {
                 const response = await fetch(`${API_BASE}/clients`, { credentials: 'include' });
                 const clients = await response.json();
+                document.getElementById("allStaffSection").style.display = "none";
 
                 const tbody = document.getElementById('allClientsList');
                 tbody.innerHTML = clients.map(c => `
@@ -211,6 +215,7 @@
                         <td><span class="status-badge ${c.IsActive ? 'status-punched-in' : 'status-completed'}">${c.IsActive ? 'Active' : 'Inactive'}</span></td>
                     </tr>
                 `).join('');
+                document.getElementById("allClientsSection").style.display = "block";
 
                 document.getElementById('allClientsSection').classList.remove('hidden');
             } catch (error) {
