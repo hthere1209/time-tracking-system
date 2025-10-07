@@ -83,7 +83,7 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Office Location</th>
+                            <th>Role</th>
                             <th>Email</th>
                             <th>Status</th>
                         </tr>
@@ -186,7 +186,7 @@
                 tbody.innerHTML = staff.map(s => `
                     <tr>
                         <td>${s.StaffName}</td>
-                        <td>${s.LocationName}</td>
+                        <td>${s.StaffRole}</td>
                         <td>${s.Email || '-'}</td>
                         <td><span class="status-badge ${s.IsActive ? 'status-punched-in' : 'status-completed'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
                     </tr>
