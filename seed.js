@@ -1,7 +1,69 @@
 const { getConnection, sql } = require('./config/database');
+const bcrypt = require('bcrypt');
+
+async function seedAdminUser() {
+    try {
+        const pool = await getConnection();
+        
+        // Check if Users table exists
+        const tableCheck = await pool.request().query(`
+            SELECT COUNT(*) AS TableExists
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_NAME = 'Users'
+        `);
+
+        if (tableCheck.recordset[0].TableExists === 0) {
+            console.log('⚠️  Users table does not exist. Please run database/users-schema.sql');
+            return;
+        }
+
+        // Check if any admin user exists
+        const adminCheck = await pool.request().query(`
+            SELECT COUNT(*) AS AdminCount
+            FROM Users
+            WHERE Role = 'admin'
+        `);
+
+        if (adminCheck.recordset[0].AdminCount > 0) {
+            console.log('✓ Admin user already exists.');
+            return;
+        }
+
+        console.log('Creating default admin user...');
+        
+        // Hash the default password
+        const passwordHash = await bcrypt.hash('admin123', 10);
+
+        // Create admin user
+        await pool.request()
+            .input('username', sql.NVarChar, 'admin')
+            .input('email', sql.NVarChar, 'admin@timetrack.com')
+            .input('passwordHash', sql.NVarChar, passwordHash)
+            .input('role', sql.NVarChar, 'admin')
+            .query(`
+                INSERT INTO Users (Username, Email, PasswordHash, Role)
+                VALUES (@username, @email, @passwordHash, @role)
+            `);
+
+        console.log('✓ Default admin user created successfully!');
+        console.log('  Username: admin');
+        console.log('  Password: admin123');
+        console.log('  ⚠️  Please change this password after first login!');
+        console.log('');
+    } catch (err) {
+        if (err.message.includes('Cannot insert duplicate key')) {
+            console.log('✓ Admin user already exists.');
+        } else {
+            console.error('Error seeding admin user:', err.message);
+        }
+    }
+}
 
 async function seedDatabase() {
     try {
+        // First, ensure admin user exists
+        await seedAdminUser();
+        
         console.log('Checking database for existing data...');
         const pool = await getConnection();
         
@@ -183,9 +245,10 @@ async function seedDatabase() {
         console.log('  • 7 Sample Time Entries');
         console.log('');
         console.log('You can now:');
-        console.log('  1. View staff/clients at http://localhost:3000/admin');
-        console.log('  2. Punch in/out at http://localhost:3000');
-        console.log('  3. Generate reports at http://localhost:3000/reports');
+        console.log('  1. Login at http://localhost:3000/login.html');
+        console.log('  2. View admin dashboard at http://localhost:3000/admin');
+        console.log('  3. Punch in/out at http://localhost:3000');
+        console.log('  4. Generate reports at http://localhost:3000/reports');
         console.log('');
         
     } catch (err) {
@@ -194,5 +257,5 @@ async function seedDatabase() {
     }
 }
 
-module.exports = { seedDatabase };
+module.exports = { seedDatabase, seedAdminUser };
 

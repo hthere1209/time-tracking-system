@@ -15,8 +15,10 @@
             <div class="header-title">⏰ TimeTrack</div>
             <nav class="nav-links">
                 <a href="/" class="nav-link active">Punch Clock</a>
-                <a href="/admin" class="nav-link">Admin</a>
-                <a href="/reports" class="nav-link">Reports</a>
+                <a href="/admin" class="nav-link" id="adminLink" style="display: none;">Admin</a>
+                <a href="/reports" class="nav-link" id="reportsLink" style="display: none;">Reports</a>
+                <a href="/users" class="nav-link" id="usersLink" style="display: none;">Users</a>
+                <button id="signOutBtn" class="btn btn-secondary" style="display: none;">Sign Out</button>
             </nav>
         </div>
     </header>
@@ -102,6 +104,7 @@
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
+            checkAuthAndSetupNav();
             loadDropdowns();
             loadPunchedInStaff();
             setupEventListeners();
@@ -109,6 +112,48 @@
             // Refresh punched in list every 30 seconds
             setInterval(loadPunchedInStaff, 30000);
         });
+
+        async function checkAuthAndSetupNav() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/check`);
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    // Show sign out button
+                    document.getElementById('signOutBtn').style.display = 'block';
+                    document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
+                    
+                    // Show appropriate navigation links based on role
+                    if (data.user.role === 'admin') {
+                        document.getElementById('adminLink').style.display = 'block';
+                        document.getElementById('reportsLink').style.display = 'block';
+                    } else {
+                        document.getElementById('usersLink').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking auth:', error);
+            }
+        }
+
+        async function handleSignOut() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/signout`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    showAlert('Signed out successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1000);
+                } else {
+                    showAlert('Failed to sign out', 'error');
+                }
+            } catch (error) {
+                showAlert('Error signing out: ' + error.message, 'error');
+            }
+        }
 
         function setupEventListeners() {
             document.getElementById('staffSelect').addEventListener('change', checkStaffStatus);

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users - TimeTrack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div id="alertContainer"></div>
+
+    <header>
+        <div class="container">
+            <div class="flex-between">
+                <div class="logo">⏱️ TimeTrack</div>
+                <nav>
+                    <a href="/" class="nav-link">Punch Clock</a>
+                    <a href="/users" class="nav-link active">Users</a>
+                    <button id="signOutBtn" class="btn btn-secondary">Sign Out</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>User Dashboard</h1>
+            <p>Welcome, <strong id="username"></strong>!</p>
+        </div>
+
+        <!-- Today's Time Entries -->
+        <div class="card">
+            <div class="flex-between mb-2">
+                <div class="card-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">Today's Time Entries</div>
+                <button class="btn btn-primary" onclick="refreshTodayEntries()">🔄 Refresh</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Staff</th>
+                            <th>Client</th>
+                            <th>Office</th>
+                            <th>Started</th>
+                            <th>Finished</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="todayEntriesList">
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    Loading...
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">Quick Actions</div>
+            <div class="flex flex-gap" style="flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="viewAllStaff()">👥 View All Staff</button>
+                <button class="btn btn-primary" onclick="viewAllClients()">🏢 View All Clients</button>
+            </div>
+        </div>
+
+        <!-- All Staff Table (Hidden by default) -->
+        <div id="allStaffSection" class="card hidden">
+            <div class="card-header">All Staff Members</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Office Location</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allStaffList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- All Clients Table (Hidden by default) -->
+        <div id="allClientsSection" class="card hidden">
+            <div class="card-header">All Clients</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Address</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allClientsList"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '/api';
+
+        // Check authentication on page load
+        checkAuthStatus();
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshTodayEntries();
+            document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
+        });
+
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/check`);
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // If admin tries to access users page, redirect to admin
+                if (data.user.role === 'admin') {
+                    window.location.href = '/admin';
+                    return;
+                }
+
+                // Display username
+                document.getElementById('username').textContent = data.user.username;
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function refreshTodayEntries() {
+            try {
+                const response = await fetch(`${API_BASE}/time-entries/today`);
+                const entries = await response.json();
+
+                const tbody = document.getElementById('todayEntriesList');
+                
+                if (entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No entries for today</td></tr>';
+                } else {
+                    tbody.innerHTML = entries.map(entry => `
+                        <tr>
+                            <td>${entry.StaffName}</td>
+                            <td>${entry.ClientName}</td>
+                            <td>${entry.LocationName}</td>
+                            <td>${new Date(entry.TimeStarted).toLocaleTimeString()}</td>
+                            <td>${entry.TimeFinished ? new Date(entry.TimeFinished).toLocaleTimeString() : '-'}</td>
+                            <td><strong>${entry.Hours.toFixed(2)}</strong></td>
+                            <td><span class="status-badge status-${entry.IsPunchedIn ? 'punched-in' : 'completed'}">${entry.Status}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load today\'s entries:', error);
+                showAlert('Failed to load today\'s entries', 'error');
+            }
+        }
+
+        async function viewAllStaff() {
+            try {
+                const response = await fetch(`${API_BASE}/staff`);
+                const staff = await response.json();
+
+                const tbody = document.getElementById('allStaffList');
+                tbody.innerHTML = staff.map(s => `
+                    <tr>
+                        <td>${s.StaffName}</td>
+                        <td>${s.LocationName}</td>
+                        <td>${s.Email || '-'}</td>
+                        <td><span class="status-badge ${s.IsActive ? 'status-punched-in' : 'status-completed'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('allStaffSection').classList.remove('hidden');
+            } catch (error) {
+                showAlert('Failed to load staff: ' + error.message, 'error');
+            }
+        }
+
+        async function viewAllClients() {
+            try {
+                const response = await fetch(`${API_BASE}/clients`);
+                const clients = await response.json();
+
+                const tbody = document.getElementById('allClientsList');
+                tbody.innerHTML = clients.map(c => `
+                    <tr>
+                        <td>${c.ClientName}</td>
+                        <td>${c.ContactEmail || '-'}</td>
+                        <td>${c.ContactPhone || '-'}</td>
+                        <td>${c.Address || '-'}</td>
+                        <td><span class="status-badge ${c.IsActive ? 'status-punched-in' : 'status-completed'}">${c.IsActive ? 'Active' : 'Inactive'}</span></td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('allClientsSection').classList.remove('hidden');
+            } catch (error) {
+                showAlert('Failed to load clients: ' + error.message, 'error');
+            }
+        }
+
+        async function handleSignOut() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/signout`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    showAlert('Signed out successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1000);
+                } else {
+                    showAlert('Failed to sign out', 'error');
+                }
+            } catch (error) {
+                showAlert('Error signing out: ' + error.message, 'error');
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+

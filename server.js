@@ -1,31 +1,54 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const session = require('express-session');
 const path = require('path');
 require('dotenv').config();
 
 // Import routes
+const authRoutes = require('./routes/auth');
 const staffRoutes = require('./routes/staff');
 const clientRoutes = require('./routes/clients');
 const officeRoutes = require('./routes/offices');
 const timeEntryRoutes = require('./routes/timeEntries');
 const reportRoutes = require('./routes/reports');
 
+// Import middleware
+const { checkAuth, checkAdmin } = require('./middleware/auth');
+
 // Import seed function
 const { seedDatabase } = require('./seed');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Session configuration
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'timetrack-secret-change-this-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false, // Set to true if using HTTPS
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API Routes
+// Authentication routes (no auth required)
+app.use('/api/auth', authRoutes);
+
+// API Routes (all require authentication)
 app.use('/api/staff', staffRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/offices', officeRoutes);
@@ -37,17 +60,23 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'TimeTrack API is running' });
 });
 
-// Serve the main application
+// Serve the main application pages
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/admin', (req, res) => {
+// Admin and Reports pages - admin only
+app.get('/admin', checkAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.get('/reports', (req, res) => {
+app.get('/reports', checkAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'reports.html'));
+});
+
+// Users page - authenticated users only
+app.get('/users', checkAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'users.html'));
 });
 
 // Error handling middleware
@@ -66,10 +95,25 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, async () => {
-    console.log(`TimeTrack server running on http://localhost:${PORT}`);
-    console.log(`Main interface: http://localhost:${PORT}`);
-    console.log(`Admin interface: http://localhost:${PORT}/admin`);
-    console.log(`Reports interface: http://localhost:${PORT}/reports`);
+    console.log('');
+    console.log('========================================');
+    console.log('   ⏱️  TimeTrack Server Started');
+    console.log('========================================');
+    console.log(`🌐 Server: http://localhost:${PORT}`);
+    console.log('');
+    console.log('📍 Pages:');
+    console.log(`   Punch Clock: http://localhost:${PORT}`);
+    console.log(`   Login:       http://localhost:${PORT}/login.html`);
+    console.log(`   Sign Up:     http://localhost:${PORT}/signup.html`);
+    console.log(`   Admin:       http://localhost:${PORT}/admin (admin only)`);
+    console.log(`   Reports:     http://localhost:${PORT}/reports (admin only)`);
+    console.log(`   Users:       http://localhost:${PORT}/users (regular users)`);
+    console.log('');
+    console.log('👤 Default Admin Account:');
+    console.log('   Username: admin');
+    console.log('   Password: admin123');
+    console.log('   ⚠️  Please change this password after first login!');
+    console.log('========================================');
     console.log('');
     
     // Automatically seed database with sample data if empty

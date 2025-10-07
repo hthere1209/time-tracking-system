@@ -17,6 +17,7 @@
                 <a href="/" class="nav-link">Punch Clock</a>
                 <a href="/admin" class="nav-link active">Admin</a>
                 <a href="/reports" class="nav-link">Reports</a>
+                <button id="signOutBtn" class="btn btn-secondary">Sign Out</button>
             </nav>
         </div>
     </header>
@@ -227,9 +228,9 @@
         const API_BASE = '/api';
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadDashboardStats();
-            refreshTodayEntries();
-            loadOfficesForModal();
+            checkAuthAndLoadData();
+            
+            document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
             
             // Refresh every 30 seconds
             setInterval(() => {
@@ -237,6 +238,51 @@
                 refreshTodayEntries();
             }, 30000);
         });
+
+        async function checkAuthAndLoadData() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/check`);
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // Check if user is admin
+                if (data.user.role !== 'admin') {
+                    window.location.href = '/users';
+                    return;
+                }
+
+                // Load admin dashboard
+                loadDashboardStats();
+                refreshTodayEntries();
+                loadOfficesForModal();
+            } catch (error) {
+                console.error('Error checking auth:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function handleSignOut() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/signout`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    showAlert('Signed out successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1000);
+                } else {
+                    showAlert('Failed to sign out', 'error');
+                }
+            } catch (error) {
+                showAlert('Error signing out: ' + error.message, 'error');
+            }
+        }
 
         async function loadDashboardStats() {
             try {
