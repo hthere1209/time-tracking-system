@@ -202,13 +202,11 @@ router.post('/punch-in', async (req, res) => {
             .input('staffId', sql.Int, staffId)
             .input('clientId', sql.Int, clientId)
             .input('officeLocationId', sql.Int, officeLocationId)
-            .input('workDate', sql.Date, new Date())
-            .input('timeStarted', sql.DateTime, new Date())
             .input('workDescription', sql.NVarChar, workDescription || null)
             .query(`
                 INSERT INTO TimeEntries (StaffID, ClientID, LocationID, WorkDate, TimeStarted, WorkDescription, IsPunchedIn)
                 OUTPUT INSERTED.EntryID
-                VALUES (@staffId, @clientId, @officeLocationId, @workDate, @timeStarted, @workDescription, 1)
+                VALUES (@staffId, @clientId, @officeLocationId, CAST(GETDATE() AS DATE), GETDATE(), @workDescription, 1)
             `);
         
         res.status(201).json({ 
@@ -292,11 +290,10 @@ router.post('/punch-out', async (req, res) => {
         const timeEntryId = checkResult.recordset[0].EntryID;
         await pool.request()
             .input('timeEntryId', sql.Int, timeEntryId)
-            .input('timeFinished', sql.DateTime, new Date())
             .input('workDescription', sql.NVarChar, workDescription || null)
             .query(`
                 UPDATE TimeEntries
-                SET TimeFinished = @timeFinished,
+                SET TimeFinished = GETDATE(),
                     IsPunchedIn = 0,
                     ModifiedDate = GETDATE()
                     ${workDescription ? ', WorkDescription = @workDescription' : ''}
