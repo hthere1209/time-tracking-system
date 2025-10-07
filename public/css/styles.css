@@ -341,6 +341,12 @@ select {
     box-shadow: var(--shadow-xl);
 }
 
+.btn-small {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: var(--radius);
+}
+
 .btn-block {
     display: flex;
     width: 100%;

@@ -121,5 +121,24 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// Delete client (soft delete - set IsActive = 0)
+router.delete('/:id', async (req, res) => {
+    try {
+        const pool = await getConnection();
+        await pool.request()
+            .input('clientId', sql.Int, req.params.id)
+            .query(`
+                UPDATE Clients
+                SET IsActive = 0
+                WHERE ClientID = @clientId
+            `);
+        
+        res.json({ message: 'Client deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting client:', err);
+        res.status(500).json({ error: 'Failed to delete client', message: err.message });
+    }
+});
+
 module.exports = router;
 

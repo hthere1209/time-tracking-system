@@ -107,5 +107,24 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// Delete office location (soft delete - set IsActive = 0)
+router.delete('/:id', async (req, res) => {
+    try {
+        const pool = await getConnection();
+        await pool.request()
+            .input('officeId', sql.Int, req.params.id)
+            .query(`
+                UPDATE OfficeLocations
+                SET IsActive = 0
+                WHERE LocationID = @officeId
+            `);
+        
+        res.json({ message: 'Office location deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting office location:', err);
+        res.status(500).json({ error: 'Failed to delete office location', message: err.message });
+    }
+});
+
 module.exports = router;
 

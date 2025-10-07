@@ -102,6 +102,7 @@
                             <th>Cost Rate</th>
                             <th>Email</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="allStaffList"></tbody>
@@ -122,6 +123,7 @@
                             <th>Phone</th>
                             <th>Address</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="allClientsList"></tbody>
@@ -270,7 +272,7 @@
                             <td><strong>${entry.Hours.toFixed(2)}</strong></td>
                             <td><span class="status-badge status-${entry.IsPunchedIn ? 'punched-in' : 'completed'}">${entry.Status}</span></td>
                             <td>
-                                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="viewEntry(${entry.TimeEntryID})">View</button>
+                                <button class="btn btn-danger btn-small" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="deleteTimeEntry(${entry.EntryID}, '${entry.StaffName}')">🗑️ Delete</button>
                             </td>
                         </tr>
                     `).join('');
@@ -299,6 +301,7 @@
                         <td>$${s.HourlyCostRate.toFixed(2)}/hr</td>
                         <td>${s.Email || '-'}</td>
                         <td><span class="status-badge ${s.IsActive ? 'status-punched-in' : 'status-completed'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
+                        <td><button class="btn btn-danger btn-small" onclick="deleteStaff(${s.StaffID}, '${s.StaffName}')">🗑️ Delete</button></td>
                     </tr>
                 `).join('');
 
@@ -327,6 +330,7 @@
                         <td>${c.ContactPhone || '-'}</td>
                         <td>${c.Address || '-'}</td>
                         <td><span class="status-badge ${c.IsActive ? 'status-punched-in' : 'status-completed'}">${c.IsActive ? 'Active' : 'Inactive'}</span></td>
+                        <td><button class="btn btn-danger btn-small" onclick="deleteClient(${c.ClientID}, '${c.ClientName}')">🗑️ Delete</button></td>
                     </tr>
                 `).join('');
 
@@ -448,6 +452,76 @@
 
         function viewEntry(entryId) {
             alert(`View entry ${entryId} - Full editing features can be added here`);
+        }
+
+        async function deleteStaff(staffId, staffName) {
+            if (!confirm(`Are you sure you want to delete staff member "${staffName}"? This will deactivate them, not permanently delete.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/staff/${staffId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Staff member deleted successfully!', 'success');
+                    viewAllStaff(); // Refresh the list
+                } else {
+                    showAlert(result.error || 'Failed to delete staff member', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteClient(clientId, clientName) {
+            if (!confirm(`Are you sure you want to delete client "${clientName}"? This will deactivate them, not permanently delete.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/clients/${clientId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Client deleted successfully!', 'success');
+                    viewAllClients(); // Refresh the list
+                } else {
+                    showAlert(result.error || 'Failed to delete client', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteTimeEntry(entryId, staffName) {
+            if (!confirm(`Are you sure you want to delete this time entry for "${staffName}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/time-entries/${entryId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Time entry deleted successfully!', 'success');
+                    refreshTodayEntries(); // Refresh the list
+                    loadDashboardStats(); // Update stats
+                } else {
+                    showAlert(result.error || 'Failed to delete time entry', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
         }
 
         function showModal(modalId) {

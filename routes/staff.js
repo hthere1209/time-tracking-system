@@ -152,5 +152,24 @@ router.get('/:id/punch-status', async (req, res) => {
     }
 });
 
+// Delete staff member (soft delete - set IsActive = 0)
+router.delete('/:id', async (req, res) => {
+    try {
+        const pool = await getConnection();
+        await pool.request()
+            .input('staffId', sql.Int, req.params.id)
+            .query(`
+                UPDATE Staff
+                SET IsActive = 0
+                WHERE StaffID = @staffId
+            `);
+        
+        res.json({ message: 'Staff member deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting staff member:', err);
+        res.status(500).json({ error: 'Failed to delete staff member', message: err.message });
+    }
+});
+
 module.exports = router;
 
