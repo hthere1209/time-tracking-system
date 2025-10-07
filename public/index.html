@@ -101,6 +101,7 @@
         const API_BASE = '/api';
         let currentStaffId = null;
         let isPunchedIn = false;
+        let currentUserEmail = null;
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
@@ -119,6 +120,9 @@
                 const data = await response.json();
                 
                 if (data.authenticated) {
+                    // Store current user email
+                    currentUserEmail = data.user.email;
+                    
                     // Show sign out button
                     document.getElementById('signOutBtn').style.display = 'block';
                     document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
@@ -164,10 +168,11 @@
 
         async function loadDropdowns() {
             try {
-                const [staffRes, clientsRes, officesRes] = await Promise.all([
+                const [staffRes, clientsRes, officesRes, authRes] = await Promise.all([
                     fetch(`${API_BASE}/staff`, { credentials: 'include' }),
                     fetch(`${API_BASE}/clients`, { credentials: 'include' }),
-                    fetch(`${API_BASE}/offices`, { credentials: 'include' })
+                    fetch(`${API_BASE}/offices`, { credentials: 'include' }),
+                    fetch(`${API_BASE}/auth/check`, { credentials: 'include' })
                 ]);
 
                 if (!staffRes.ok || !clientsRes.ok || !officesRes.ok) {
@@ -177,15 +182,30 @@
                 const staff = await staffRes.json();
                 const clients = await clientsRes.json();
                 const offices = await officesRes.json();
+                const authData = await authRes.json();
+                
+                const isAdmin = authData.authenticated && authData.user.role && authData.user.role.toLowerCase() === 'admin';
+                const userEmail = authData.authenticated ? authData.user.email : null;
 
-                // Populate staff dropdown
+                // Populate staff dropdown - filter by email for non-admin users
                 const staffSelect = document.getElementById('staffSelect');
                 staff.forEach(s => {
-                    const option = document.createElement('option');
-                    option.value = s.StaffID;
-                    option.textContent = `${s.StaffName} - ${s.LocationName}`;
-                    staffSelect.appendChild(option);
+                    // For non-admin users, only show staff members with matching email
+                    // For admin users, show all staff members
+                    const emailMatches = s.Email && userEmail && s.Email.toLowerCase() === userEmail.toLowerCase();
+                    
+                    if (isAdmin || emailMatches) {
+                        const option = document.createElement('option');
+                        option.value = s.StaffID;
+                        option.textContent = `${s.StaffName} - ${s.LocationName}`;
+                        staffSelect.appendChild(option);
+                    }
                 });
+                
+                // If no matching staff found for non-admin user, show warning
+                if (!isAdmin && staffSelect.options.length === 1) {
+                    showAlert('No staff profile found matching your email. Please contact admin.', 'error');
+                }
 
                 // Populate clients dropdown
                 const clientSelect = document.getElementById('clientSelect');

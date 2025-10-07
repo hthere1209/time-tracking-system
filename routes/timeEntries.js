@@ -139,7 +139,47 @@ router.post('/punch-in', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         
+        // Check if user is logged in
+        if (!req.session.user || !req.session.user.email) {
+            return res.status(401).json({ 
+                error: 'Unauthorized',
+                message: 'Please log in to punch in'
+            });
+        }
+        
         const pool = await getConnection();
+        
+        // Verify that logged-in user's email matches staff member's email
+        const staffCheck = await pool.request()
+            .input('staffId', sql.Int, staffId)
+            .query(`
+                SELECT Email
+                FROM Staff
+                WHERE StaffID = @staffId AND IsActive = 1
+            `);
+        
+        if (staffCheck.recordset.length === 0) {
+            return res.status(404).json({ 
+                error: 'Staff member not found or inactive'
+            });
+        }
+        
+        const staffEmail = staffCheck.recordset[0].Email;
+        const userEmail = req.session.user.email;
+        const userRole = req.session.user.role;
+        
+        // Admin users can punch in for anyone, regular users only for matching email
+        const isAdmin = userRole && userRole.toLowerCase() === 'admin';
+        
+        if (!isAdmin) {
+            // Compare emails (case-insensitive) for non-admin users
+            if (!staffEmail || staffEmail.toLowerCase() !== userEmail.toLowerCase()) {
+                return res.status(403).json({ 
+                    error: 'Access denied',
+                    message: 'Your email does not match the selected staff member. You can only punch in for yourself.'
+                });
+            }
+        }
         
         // Check if staff is already punched in
         const checkResult = await pool.request()
@@ -190,7 +230,47 @@ router.post('/punch-out', async (req, res) => {
             return res.status(400).json({ error: 'Staff ID is required' });
         }
         
+        // Check if user is logged in
+        if (!req.session.user || !req.session.user.email) {
+            return res.status(401).json({ 
+                error: 'Unauthorized',
+                message: 'Please log in to punch out'
+            });
+        }
+        
         const pool = await getConnection();
+        
+        // Verify that logged-in user's email matches staff member's email
+        const staffCheck = await pool.request()
+            .input('staffId', sql.Int, staffId)
+            .query(`
+                SELECT Email
+                FROM Staff
+                WHERE StaffID = @staffId AND IsActive = 1
+            `);
+        
+        if (staffCheck.recordset.length === 0) {
+            return res.status(404).json({ 
+                error: 'Staff member not found or inactive'
+            });
+        }
+        
+        const staffEmail = staffCheck.recordset[0].Email;
+        const userEmail = req.session.user.email;
+        const userRole = req.session.user.role;
+        
+        // Admin users can punch out for anyone, regular users only for matching email
+        const isAdmin = userRole && userRole.toLowerCase() === 'admin';
+        
+        if (!isAdmin) {
+            // Compare emails (case-insensitive) for non-admin users
+            if (!staffEmail || staffEmail.toLowerCase() !== userEmail.toLowerCase()) {
+                return res.status(403).json({ 
+                    error: 'Access denied',
+                    message: 'Your email does not match the selected staff member. You can only punch out for yourself.'
+                });
+            }
+        }
         
         // Find active punch-in entry
         const checkResult = await pool.request()

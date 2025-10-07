@@ -311,7 +311,15 @@
             currentReportType = reportType;
 
             try {
-                let url = `${API_BASE}/reports/${reportType}?startDate=${startDate}&endDate=${endDate}`;
+                // Map frontend report type to backend endpoint
+                let endpoint = reportType;
+                if (reportType === 'date-range') {
+                    endpoint = 'date-range-hours';
+                } else if (reportType === 'client-summary') {
+                    endpoint = 'client-billing-summary';
+                }
+                
+                let url = `${API_BASE}/reports/${endpoint}?startDate=${startDate}&endDate=${endDate}`;
                 
                 if (reportType === 'staff-work') {
                     const staffId = document.getElementById('staffSelect').value;
