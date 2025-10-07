@@ -42,9 +42,6 @@ app.use(session({
     }
 }));
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Authentication routes (no auth required)
 app.use('/api/auth', authRoutes);
 
@@ -60,8 +57,8 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'TimeTrack API is running' });
 });
 
-// Serve the main application pages
-// Punch clock - accessible to all authenticated users
+// Serve the main application pages (with authentication checks)
+// Root path - redirect to login page first
 app.get('/', checkAuth, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -79,6 +76,10 @@ app.get('/reports', checkAdmin, (req, res) => {
 app.get('/users', checkAuth, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'users.html'));
 });
+
+// Serve static files from public directory (CSS, JS, login/signup pages)
+// This comes AFTER protected routes so authentication is checked first
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
