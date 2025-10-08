@@ -96,6 +96,7 @@ router.get('/client-billing', async (req, res) => {
                 s.StaffName,
                 ol.LocationName AS OfficeLocation,
                 te.WorkDescription AS ServiceDescription,
+                te.InvoiceNumber,
                 CASE 
                     WHEN te.TimeFinished IS NULL THEN 0
                     ELSE DATEDIFF(MINUTE, te.TimeStarted, te.TimeFinished) / 60.0

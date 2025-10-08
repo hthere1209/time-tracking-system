@@ -62,13 +62,14 @@
                             <th>Started</th>
                             <th>Finished</th>
                             <th>Hours</th>
+                            <th>Invoice #</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="todayEntriesList">
                         <tr>
-                            <td colspan="8" class="text-center">
+                            <td colspan="9" class="text-center">
                                 <div class="loading">
                                     <div class="spinner"></div>
                                     Loading...
@@ -87,6 +88,7 @@
                 <button class="btn btn-primary" onclick="showModal('staffModal')"> <i class="fas fa-add"></i>Add Staff</button>
                 <button class="btn btn-primary" onclick="showModal('clientModal')"> <i class="fas fa-add"></i>Add Client</button>
                 <button class="btn btn-primary" onclick="showModal('officeModal')"> <i class="fas fa-add"></i>Add Office</button>
+                <button class="btn btn-primary" onclick="showBulkInvoiceModal()"><i class="fas fa-file-invoice"></i> Bulk Invoice Assignment</button>
                 <button class="btn btn-primary" onclick="viewAllStaff()"><i class="fas fa-users"></i> View All Staff</button>
                 <button class="btn btn-primary" onclick="viewAllClients()"><i class="fas fa-users"></i> View All Clients</button>
             </div>
@@ -223,6 +225,78 @@
         </div>
     </div>
 
+    <!-- Modal for Bulk Invoice Assignment -->
+    <div id="bulkInvoiceModal" class="modal-overlay hidden" onclick="hideModalOnOverlay(event, 'bulkInvoiceModal')">
+        <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 900px;">
+            <div class="card">
+                <div class="card-header">Bulk Invoice Assignment</div>
+                
+                <div class="form-group">
+                    <label for="invoiceClient">Filter by Client (Optional)</label>
+                    <select id="invoiceClient" onchange="loadUninvoicedEntries()">
+                        <option value="">All Clients</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Date Range</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="date" id="invoiceStartDate" required>
+                        <span>to</span>
+                        <input type="date" id="invoiceEndDate" required>
+                        <button type="button" class="btn btn-secondary" onclick="loadUninvoicedEntries()">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+
+                <div id="uninvoicedEntriesSection" class="hidden">
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Uninvoiced Time Entries (<span id="entryCount">0</span>)</strong>
+                        <div style="margin-top: 0.5rem;">
+                            <label style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" id="selectAllEntries" onchange="toggleSelectAll(this)">
+                                Select All
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"><input type="checkbox" disabled></th>
+                                    <th>Date</th>
+                                    <th>Staff</th>
+                                    <th>Client</th>
+                                    <th>Hours</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uninvoicedEntriesList">
+                                <tr><td colspan="6" class="text-center">Click "Search" to load entries</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="bulkInvoiceNumber">Invoice Number *</label>
+                        <input type="text" id="bulkInvoiceNumber" placeholder="INV-2024-001" required>
+                    </div>
+
+                    <div class="flex flex-gap">
+                        <button type="button" class="btn btn-primary" onclick="assignBulkInvoice()">
+                            <i class="fas fa-save"></i> Assign Invoice Number
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="hideModal('bulkInvoiceModal')">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api';
 
@@ -305,7 +379,7 @@
                 const tbody = document.getElementById('todayEntriesList');
                 
                 if (entries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center">No entries for today</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center">No entries for today</td></tr>';
                 } else {
                     tbody.innerHTML = entries.map(entry => `
                         <tr>
@@ -315,6 +389,17 @@
                             <td>${new Date(entry.TimeStarted).toLocaleTimeString()}</td>
                             <td>${entry.TimeFinished ? new Date(entry.TimeFinished).toLocaleTimeString() : '-'}</td>
                             <td><strong>${entry.Hours.toFixed(2)}</strong></td>
+                            <td>
+                                <div style="display: flex; gap: 0.25rem; align-items: center;">
+                                    <input type="text" 
+                                           id="invoice-${entry.EntryID}" 
+                                           value="${entry.InvoiceNumber || ''}" 
+                                           placeholder="INV-001" 
+                                           style="width: 90px; padding: 0.25rem; font-size: 0.875rem;"
+                                           ${entry.IsPunchedIn ? 'disabled' : ''}>
+                                    ${!entry.IsPunchedIn ? `<button class="btn btn-primary btn-small" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="updateInvoiceNumber(${entry.EntryID})"><i class="fas fa-save"></i></button>` : ''}
+                                </div>
+                            </td>
                             <td><span class="status-badge status-${entry.IsPunchedIn ? 'punched-in' : 'completed'}">${entry.Status}</span></td>
                             <td>
                                 <button class="btn btn-danger btn-small" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="deleteTimeEntry(${entry.EntryID}, '${entry.StaffName}')"><i class="fas fa-trash"></i> Delete</button>
@@ -572,6 +657,154 @@
                     loadDashboardStats(); // Update stats
                 } else {
                     showAlert(result.error || 'Failed to delete time entry', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function updateInvoiceNumber(entryId) {
+            const input = document.getElementById(`invoice-${entryId}`);
+            const invoiceNumber = input.value.trim();
+
+            try {
+                const response = await fetch(`${API_BASE}/time-entries/${entryId}/invoice`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ invoiceNumber: invoiceNumber || null })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert(invoiceNumber ? `Invoice number ${invoiceNumber} saved!` : 'Invoice number cleared!', 'success');
+                } else {
+                    showAlert(result.error || 'Failed to update invoice number', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function showBulkInvoiceModal() {
+            showModal('bulkInvoiceModal');
+            
+            // Load clients
+            try {
+                const response = await fetch(`${API_BASE}/clients`, { credentials: 'include' });
+                const clients = await response.json();
+                
+                const clientSelect = document.getElementById('invoiceClient');
+                clientSelect.innerHTML = '<option value="">All Clients</option>';
+                clients.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.ClientID;
+                    option.textContent = c.ClientName;
+                    clientSelect.appendChild(option);
+                });
+
+                // Set default dates
+                const today = new Date();
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                document.getElementById('invoiceStartDate').valueAsDate = firstDay;
+                document.getElementById('invoiceEndDate').valueAsDate = today;
+                document.getElementById('uninvoicedEntriesSection').classList.add('hidden');
+                document.getElementById('bulkInvoiceNumber').value = '';
+            } catch (error) {
+                showAlert('Error loading clients: ' + error.message, 'error');
+            }
+        }
+
+        async function loadUninvoicedEntries() {
+            try {
+                const clientId = document.getElementById('invoiceClient').value;
+                const startDate = document.getElementById('invoiceStartDate').value;
+                const endDate = document.getElementById('invoiceEndDate').value;
+
+                if (!startDate || !endDate) {
+                    showAlert('Please select date range', 'error');
+                    return;
+                }
+
+                const params = new URLSearchParams({ startDate, endDate });
+                if (clientId) params.append('clientId', clientId);
+
+                const response = await fetch(`${API_BASE}/time-entries/status/uninvoiced?${params}`, { credentials: 'include' });
+                const entries = await response.json();
+
+                const tbody = document.getElementById('uninvoicedEntriesList');
+                document.getElementById('entryCount').textContent = entries.length;
+
+                if (entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No uninvoiced entries found</td></tr>';
+                } else {
+                    tbody.innerHTML = entries.map(entry => `
+                        <tr>
+                            <td><input type="checkbox" class="entry-checkbox" data-entry-id="${entry.EntryID}" onchange="updateSelectAllState()"></td>
+                            <td>${new Date(entry.WorkDate).toLocaleDateString()}</td>
+                            <td>${entry.StaffName}</td>
+                            <td>${entry.ClientName}</td>
+                            <td>${entry.Hours.toFixed(2)}</td>
+                            <td>${entry.WorkDescription || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+
+                document.getElementById('uninvoicedEntriesSection').classList.remove('hidden');
+                document.getElementById('selectAllEntries').checked = false;
+            } catch (error) {
+                showAlert('Error loading entries: ' + error.message, 'error');
+            }
+        }
+
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('.entry-checkbox');
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+        }
+
+        function updateSelectAllState() {
+            const checkboxes = document.querySelectorAll('.entry-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            document.getElementById('selectAllEntries').checked = allChecked;
+        }
+
+        async function assignBulkInvoice() {
+            const invoiceNumber = document.getElementById('bulkInvoiceNumber').value.trim();
+            const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+
+            if (!invoiceNumber) {
+                showAlert('Please enter an invoice number', 'error');
+                return;
+            }
+
+            if (checkboxes.length === 0) {
+                showAlert('Please select at least one entry', 'error');
+                return;
+            }
+
+            const entryIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.entryId));
+
+            if (!confirm(`Assign invoice "${invoiceNumber}" to ${entryIds.length} entries?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/time-entries/bulk-invoice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ entryIds, invoiceNumber })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert(result.message, 'success');
+                    hideModal('bulkInvoiceModal');
+                    refreshTodayEntries();
+                } else {
+                    showAlert(result.error || 'Failed to assign invoices', 'error');
                 }
             } catch (error) {
                 showAlert('Error: ' + error.message, 'error');

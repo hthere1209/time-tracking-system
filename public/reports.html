@@ -120,6 +120,7 @@
                                 <th>Office</th>
                                 <th>Service Description</th>
                                 <th>Hours</th>
+                                <th>Invoice #</th>
                                 <th>Cost</th>
                                 <th>Billable Amount</th>
                                 <th>Profit</th>
@@ -424,7 +425,7 @@
             const tbody = document.getElementById('clientBillingBody');
             
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center">No data found for selected criteria</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">No data found for selected criteria</td></tr>';
                 document.getElementById('clientBillingFooter').innerHTML = '';
                 return;
             }
@@ -445,6 +446,7 @@
                         <td>${row.OfficeLocation}</td>
                         <td>${row.ServiceDescription || '-'}</td>
                         <td>${row.Hours.toFixed(2)}</td>
+                        <td>${row.InvoiceNumber || '<span style="color: #999;">Not Invoiced</span>'}</td>
                         <td>$${row.ServiceCost.toFixed(2)}</td>
                         <td>$${row.BillableAmount.toFixed(2)}</td>
                         <td>$${row.Profit.toFixed(2)}</td>
@@ -456,6 +458,7 @@
                 <tr>
                     <td colspan="5"><strong>TOTALS</strong></td>
                     <td><strong>${totalHours.toFixed(2)}</strong></td>
+                    <td></td>
                     <td><strong>$${totalCost.toFixed(2)}</strong></td>
                     <td><strong>$${totalBillable.toFixed(2)}</strong></td>
                     <td><strong>$${totalProfit.toFixed(2)}</strong></td>

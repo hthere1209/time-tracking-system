@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
                 te.TimeStarted,
                 te.TimeFinished,
                 te.WorkDescription,
+                te.InvoiceNumber,
                 CASE 
                     WHEN te.TimeFinished IS NULL THEN DATEDIFF(MINUTE, te.TimeStarted, GETDATE()) / 60.0
                     ELSE DATEDIFF(MINUTE, te.TimeStarted, te.TimeFinished) / 60.0
@@ -81,6 +82,7 @@ router.get('/today', async (req, res) => {
                     te.TimeStarted,
                     te.TimeFinished,
                     te.WorkDescription,
+                    te.InvoiceNumber,
                     CASE 
                         WHEN te.TimeFinished IS NULL THEN DATEDIFF(MINUTE, te.TimeStarted, GETDATE()) / 60.0
                         ELSE DATEDIFF(MINUTE, te.TimeStarted, te.TimeFinished) / 60.0
@@ -406,6 +408,129 @@ router.delete('/:id', async (req, res) => {
     } catch (err) {
         console.error('Error deleting time entry:', err);
         res.status(500).json({ error: 'Failed to delete time entry', message: err.message });
+    }
+});
+
+// Update invoice number for a single entry (admin function)
+router.patch('/:id/invoice', async (req, res) => {
+    try {
+        const { invoiceNumber } = req.body;
+        
+        const pool = await getConnection();
+        await pool.request()
+            .input('timeEntryId', sql.Int, req.params.id)
+            .input('invoiceNumber', sql.NVarChar, invoiceNumber || null)
+            .query(`
+                UPDATE TimeEntries
+                SET InvoiceNumber = @invoiceNumber,
+                    ModifiedDate = GETDATE()
+                WHERE EntryID = @timeEntryId
+            `);
+        
+        res.json({ 
+            message: 'Invoice number updated successfully',
+            invoiceNumber: invoiceNumber 
+        });
+    } catch (err) {
+        console.error('Error updating invoice number:', err);
+        res.status(500).json({ error: 'Failed to update invoice number', message: err.message });
+    }
+});
+
+// Bulk update invoice numbers (admin function)
+router.post('/bulk-invoice', async (req, res) => {
+    try {
+        const { entryIds, invoiceNumber } = req.body;
+        
+        if (!entryIds || !Array.isArray(entryIds) || entryIds.length === 0) {
+            return res.status(400).json({ error: 'Entry IDs array is required' });
+        }
+        
+        if (!invoiceNumber) {
+            return res.status(400).json({ error: 'Invoice number is required' });
+        }
+        
+        const pool = await getConnection();
+        const request = pool.request()
+            .input('invoiceNumber', sql.NVarChar, invoiceNumber);
+        
+        // Build dynamic query with multiple IDs
+        const idParams = entryIds.map((id, index) => {
+            request.input(`id${index}`, sql.Int, id);
+            return `@id${index}`;
+        }).join(',');
+        
+        const result = await request.query(`
+            UPDATE TimeEntries
+            SET InvoiceNumber = @invoiceNumber,
+                ModifiedDate = GETDATE()
+            WHERE EntryID IN (${idParams})
+        `);
+        
+        res.json({ 
+            message: `Invoice number ${invoiceNumber} assigned to ${result.rowsAffected[0]} time entries`,
+            updatedCount: result.rowsAffected[0],
+            invoiceNumber: invoiceNumber
+        });
+    } catch (err) {
+        console.error('Error bulk updating invoice numbers:', err);
+        res.status(500).json({ error: 'Failed to bulk update invoice numbers', message: err.message });
+    }
+});
+
+// Get uninvoiced time entries
+router.get('/status/uninvoiced', async (req, res) => {
+    try {
+        const { clientId, startDate, endDate } = req.query;
+        
+        const pool = await getConnection();
+        let query = `
+            SELECT 
+                te.EntryID,
+                te.StaffID,
+                s.StaffName,
+                te.ClientID,
+                c.ClientName,
+                te.LocationID,
+                ol.LocationName,
+                te.WorkDate,
+                te.TimeStarted,
+                te.TimeFinished,
+                te.WorkDescription,
+                DATEDIFF(MINUTE, te.TimeStarted, te.TimeFinished) / 60.0 AS Hours
+            FROM TimeEntries te
+            INNER JOIN Staff s ON te.StaffID = s.StaffID
+            INNER JOIN Clients c ON te.ClientID = c.ClientID
+            INNER JOIN OfficeLocations ol ON te.LocationID = ol.LocationID
+            WHERE te.InvoiceNumber IS NULL
+              AND te.IsPunchedIn = 0
+              AND te.TimeFinished IS NOT NULL
+        `;
+        
+        const request = pool.request();
+        
+        if (clientId) {
+            query += ' AND te.ClientID = @clientId';
+            request.input('clientId', sql.Int, clientId);
+        }
+        
+        if (startDate) {
+            query += ' AND te.WorkDate >= @startDate';
+            request.input('startDate', sql.Date, startDate);
+        }
+        
+        if (endDate) {
+            query += ' AND te.WorkDate <= @endDate';
+            request.input('endDate', sql.Date, endDate);
+        }
+        
+        query += ' ORDER BY te.WorkDate DESC, te.TimeStarted DESC';
+        
+        const result = await request.query(query);
+        res.json(result.recordset);
+    } catch (err) {
+        console.error('Error fetching uninvoiced entries:', err);
+        res.status(500).json({ error: 'Failed to fetch uninvoiced entries', message: err.message });
     }
 });
 
