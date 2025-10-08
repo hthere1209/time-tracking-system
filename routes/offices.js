@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 
-// Get all active office locations
 router.get('/', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -24,7 +23,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get specific office location
 router.get('/:id', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -52,7 +50,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Create new office location
 router.post('/', async (req, res) => {
     try {
         const { locationName, address } = req.body;
@@ -81,7 +78,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Update office location
 router.put('/:id', async (req, res) => {
     try {
         const { locationName, address, isActive } = req.body;
@@ -107,7 +103,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Delete office location (soft delete - set IsActive = 0)
 router.delete('/:id', async (req, res) => {
     try {
         const pool = await getConnection();

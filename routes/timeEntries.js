@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 
-// Get all time entries with optional filters
 router.get('/', async (req, res) => {
     try {
         const { startDate, endDate, staffId, clientId } = req.query;
@@ -67,7 +66,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get today's time entries (for admin dashboard)
 router.get('/today', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -103,7 +101,6 @@ router.get('/today', async (req, res) => {
     }
 });
 
-// Get currently punched in staff
 router.get('/punched-in', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -132,7 +129,6 @@ router.get('/punched-in', async (req, res) => {
     }
 });
 
-// Punch In - Create new time entry
 router.post('/punch-in', async (req, res) => {
     try {
         const { staffId, clientId, officeLocationId, workDescription } = req.body;
@@ -141,7 +137,6 @@ router.post('/punch-in', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         
-        // Check if user is logged in
         if (!req.session.user || !req.session.user.email) {
             return res.status(401).json({ 
                 error: 'Unauthorized',
@@ -151,7 +146,6 @@ router.post('/punch-in', async (req, res) => {
         
         const pool = await getConnection();
         
-        // Verify that logged-in user's email matches staff member's email
         const staffCheck = await pool.request()
             .input('staffId', sql.Int, staffId)
             .query(`
@@ -170,11 +164,9 @@ router.post('/punch-in', async (req, res) => {
         const userEmail = req.session.user.email;
         const userRole = req.session.user.role;
         
-        // Admin users can punch in for anyone, regular users only for matching email
         const isAdmin = userRole && userRole.toLowerCase() === 'admin';
         
         if (!isAdmin) {
-            // Compare emails (case-insensitive) for non-admin users
             if (!staffEmail || staffEmail.toLowerCase() !== userEmail.toLowerCase()) {
                 return res.status(403).json({ 
                     error: 'Access denied',
@@ -183,7 +175,6 @@ router.post('/punch-in', async (req, res) => {
             }
         }
         
-        // Check if staff is already punched in
         const checkResult = await pool.request()
             .input('staffId', sql.Int, staffId)
             .query(`
@@ -199,7 +190,6 @@ router.post('/punch-in', async (req, res) => {
             });
         }
         
-        // Create new time entry
         const result = await pool.request()
             .input('staffId', sql.Int, staffId)
             .input('clientId', sql.Int, clientId)
@@ -221,7 +211,6 @@ router.post('/punch-in', async (req, res) => {
     }
 });
 
-// Punch Out - Complete time entry
 router.post('/punch-out', async (req, res) => {
     try {
         const { staffId, workDescription } = req.body;
@@ -230,7 +219,6 @@ router.post('/punch-out', async (req, res) => {
             return res.status(400).json({ error: 'Staff ID is required' });
         }
         
-        // Check if user is logged in
         if (!req.session.user || !req.session.user.email) {
             return res.status(401).json({ 
                 error: 'Unauthorized',
@@ -240,7 +228,6 @@ router.post('/punch-out', async (req, res) => {
         
         const pool = await getConnection();
         
-        // Verify that logged-in user's email matches staff member's email
         const staffCheck = await pool.request()
             .input('staffId', sql.Int, staffId)
             .query(`
@@ -259,11 +246,9 @@ router.post('/punch-out', async (req, res) => {
         const userEmail = req.session.user.email;
         const userRole = req.session.user.role;
         
-        // Admin users can punch out for anyone, regular users only for matching email
         const isAdmin = userRole && userRole.toLowerCase() === 'admin';
         
         if (!isAdmin) {
-            // Compare emails (case-insensitive) for non-admin users
             if (!staffEmail || staffEmail.toLowerCase() !== userEmail.toLowerCase()) {
                 return res.status(403).json({ 
                     error: 'Access denied',
@@ -272,7 +257,6 @@ router.post('/punch-out', async (req, res) => {
             }
         }
         
-        // Find active punch-in entry
         const checkResult = await pool.request()
             .input('staffId', sql.Int, staffId)
             .query(`
@@ -288,7 +272,6 @@ router.post('/punch-out', async (req, res) => {
             });
         }
         
-        // Update time entry
         const timeEntryId = checkResult.recordset[0].EntryID;
         await pool.request()
             .input('timeEntryId', sql.Int, timeEntryId)
@@ -312,7 +295,6 @@ router.post('/punch-out', async (req, res) => {
     }
 });
 
-// Get specific time entry
 router.get('/:id', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -356,7 +338,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Update time entry (admin function)
 router.put('/:id', async (req, res) => {
     try {
         const { staffId, clientId, officeLocationId, workDate, timeStarted, timeFinished, workDescription } = req.body;
@@ -393,7 +374,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Delete time entry (admin function)
 router.delete('/:id', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -411,7 +391,6 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// Update invoice number for a single entry (admin function)
 router.patch('/:id/invoice', async (req, res) => {
     try {
         const { invoiceNumber } = req.body;
@@ -437,7 +416,6 @@ router.patch('/:id/invoice', async (req, res) => {
     }
 });
 
-// Bulk update invoice numbers (admin function)
 router.post('/bulk-invoice', async (req, res) => {
     try {
         const { entryIds, invoiceNumber } = req.body;
@@ -454,7 +432,6 @@ router.post('/bulk-invoice', async (req, res) => {
         const request = pool.request()
             .input('invoiceNumber', sql.NVarChar, invoiceNumber);
         
-        // Build dynamic query with multiple IDs
         const idParams = entryIds.map((id, index) => {
             request.input(`id${index}`, sql.Int, id);
             return `@id${index}`;
@@ -478,7 +455,6 @@ router.post('/bulk-invoice', async (req, res) => {
     }
 });
 
-// Get uninvoiced time entries
 router.get('/status/uninvoiced', async (req, res) => {
     try {
         const { clientId, startDate, endDate } = req.query;

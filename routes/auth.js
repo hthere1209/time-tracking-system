@@ -3,7 +3,6 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const { getConnection, sql } = require('../config/database');
 
-// Sign Up - Create new user account
 router.post('/signup', async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -12,14 +11,12 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ error: 'All fields are required' });
         }
 
-        // Validate password length
         if (password.length < 6) {
             return res.status(400).json({ error: 'Password must be at least 6 characters long' });
         }
 
         const pool = await getConnection();
         
-        // Check if username or email already exists
         const checkUser = await pool.request()
             .input('username', sql.NVarChar, username)
             .input('email', sql.NVarChar, email)
@@ -32,11 +29,9 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ error: 'Username or email already exists' });
         }
 
-        // Hash password
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
 
-        // Create user (default role is 'user')
         const result = await pool.request()
             .input('username', sql.NVarChar, username)
             .input('email', sql.NVarChar, email)
@@ -49,7 +44,6 @@ router.post('/signup', async (req, res) => {
 
         const user = result.recordset[0];
 
-        // Set session
         req.session.user = {
             userId: user.UserID,
             username: user.Username,
@@ -72,7 +66,6 @@ router.post('/signup', async (req, res) => {
     }
 });
 
-// Sign In - Login user
 router.post('/signin', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -83,7 +76,6 @@ router.post('/signin', async (req, res) => {
 
         const pool = await getConnection();
         
-        // Get user by username or email
         const result = await pool.request()
             .input('usernameOrEmail', sql.NVarChar, username)
             .query(`
@@ -98,19 +90,16 @@ router.post('/signin', async (req, res) => {
 
         const user = result.recordset[0];
 
-        // Check if user is active
         if (!user.IsActive) {
             return res.status(401).json({ error: 'Account is disabled' });
         }
 
-        // Verify password
         const passwordMatch = await bcrypt.compare(password, user.PasswordHash);
         
         if (!passwordMatch) {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
 
-        // Update last login date
         await pool.request()
             .input('userId', sql.Int, user.UserID)
             .query(`
@@ -119,7 +108,6 @@ router.post('/signin', async (req, res) => {
                 WHERE UserID = @userId
             `);
 
-        // Set session
         req.session.user = {
             userId: user.UserID,
             username: user.Username,
@@ -142,7 +130,6 @@ router.post('/signin', async (req, res) => {
     }
 });
 
-// Sign Out - Logout user
 router.post('/signout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
@@ -153,7 +140,6 @@ router.post('/signout', (req, res) => {
     });
 });
 
-// Get current user session
 router.get('/me', (req, res) => {
     if (req.session.user) {
         res.json({ 
@@ -165,7 +151,6 @@ router.get('/me', (req, res) => {
     }
 });
 
-// Check authentication status
 router.get('/check', (req, res) => {
     res.json({ 
         authenticated: !!req.session.user,

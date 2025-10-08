@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 
-// Staff Work Report - Direct query
 router.get('/staff-work', async (req, res) => {
     try {
         const { startDate, endDate, staffId } = req.query;
@@ -77,7 +76,6 @@ router.get('/staff-work', async (req, res) => {
     }
 });
 
-// Client Billing Report - Direct query
 router.get('/client-billing', async (req, res) => {
     try {
         const { startDate, endDate, clientId } = req.query;
@@ -147,7 +145,6 @@ router.get('/client-billing', async (req, res) => {
     }
 });
 
-// Client Billing Summary Report - Direct query
 router.get('/client-billing-summary', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
@@ -202,7 +199,6 @@ router.get('/client-billing-summary', async (req, res) => {
     }
 });
 
-// Date Range Hours Report - Simple query without stored procedure
 router.get('/date-range-hours', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
@@ -248,14 +244,11 @@ router.get('/date-range-hours', async (req, res) => {
     }
 });
 
-// Dashboard Summary Statistics
 router.get('/dashboard-stats', async (req, res) => {
     try {
         const pool = await getConnection();
         
-        // Get multiple statistics in parallel
         const [todayHours, currentlyPunchedIn, thisWeekStats, thisMonthStats] = await Promise.all([
-            // Today's total hours
             pool.request().query(`
                 SELECT 
                     COUNT(DISTINCT StaffID) AS StaffCount,
@@ -267,14 +260,12 @@ router.get('/dashboard-stats', async (req, res) => {
                 WHERE WorkDate = CAST(GETDATE() AS DATE)
             `),
             
-            // Currently punched in count
             pool.request().query(`
                 SELECT COUNT(*) AS Count
                 FROM TimeEntries
                 WHERE IsPunchedIn = 1
             `),
             
-            // This week stats
             pool.request().query(`
                 SELECT 
                     COUNT(DISTINCT StaffID) AS StaffCount,
@@ -288,7 +279,6 @@ router.get('/dashboard-stats', async (req, res) => {
                 AND TimeFinished IS NOT NULL
             `),
             
-            // This month stats
             pool.request().query(`
                 SELECT 
                     SUM(CASE 

@@ -26,27 +26,25 @@
     <main class="container">
         <div id="alertContainer"></div>
 
-        <!-- Dashboard Statistics -->
         <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" style="text-align: center;">
                 <div class="stat-label">Punched In Now</div>
                 <div class="stat-value" id="statPunchedIn">-</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" style="text-align: center;">
                 <div class="stat-label">Today's Hours</div>
                 <div class="stat-value" id="statTodayHours">-</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" style="text-align: center;">
                 <div class="stat-label">This Week Hours</div>
                 <div class="stat-value" id="statWeekHours">-</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" style="text-align: center;">
                 <div class="stat-label">This Month Revenue</div>
                 <div class="stat-value" id="statMonthRevenue">-</div>
             </div>
         </div>
 
-        <!-- Today's Time Entries -->
         <div class="card">
             <div class="flex-between mb-2">
                 <div class="card-header" style="margin-bottom: 0; padding-bottom: 0; border: none;">Today's Time Entries</div>
@@ -81,7 +79,6 @@
             </div>
         </div>
 
-        <!-- Management Sections -->
         <div class="card">
             <div class="card-header">Quick Management</div>
             <div class="flex flex-gap" style="flex-wrap: wrap; justify-content: center;">
@@ -94,7 +91,6 @@
             </div>
         </div>
 
-        <!-- All Staff Table (Hidden by default) -->
         <div id="allStaffSection" class="card hidden">
             <div class="card-header">All Staff Members</div>
             <div class="table-container">
@@ -114,7 +110,6 @@
             </div>
         </div>
 
-        <!-- All Clients Table (Hidden by default) -->
         <div id="allClientsSection" class="card hidden">
             <div class="card-header">All Clients</div>
             <div class="table-container">
@@ -136,7 +131,6 @@
         </div>
     </main>
 
-    <!-- Modal for Adding Staff -->
     <div id="staffModal" class="modal-overlay hidden" onclick="hideModalOnOverlay(event, 'staffModal')">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="card">
@@ -167,7 +161,6 @@
         </div>
     </div>
 
-    <!-- Modal for Adding Client -->
     <div id="clientModal" class="modal-overlay hidden" onclick="hideModalOnOverlay(event, 'clientModal')">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="card">
@@ -202,7 +195,6 @@
         </div>
     </div>
 
-    <!-- Modal for Adding Office -->
     <div id="officeModal" class="modal-overlay hidden" onclick="hideModalOnOverlay(event, 'officeModal')">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="card">
@@ -225,7 +217,6 @@
         </div>
     </div>
 
-    <!-- Modal for Bulk Invoice Assignment -->
     <div id="bulkInvoiceModal" class="modal-overlay hidden" onclick="hideModalOnOverlay(event, 'bulkInvoiceModal')">
         <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 900px;">
             <div class="card">

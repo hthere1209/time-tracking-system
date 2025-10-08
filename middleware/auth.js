@@ -1,6 +1,3 @@
-// Authentication middleware
-
-// Check if user is authenticated
 function requireAuth(req, res, next) {
     if (req.session && req.session.user) {
         next();
@@ -8,8 +5,6 @@ function requireAuth(req, res, next) {
         res.status(401).json({ error: 'Authentication required' });
     }
 }
-
-// Check if user is an admin
 function requireAdmin(req, res, next) {
     if (req.session && req.session.user && req.session.user.role && req.session.user.role.toLowerCase() === 'admin') {
         next();
@@ -17,8 +12,6 @@ function requireAdmin(req, res, next) {
         res.status(403).json({ error: 'Admin access required' });
     }
 }
-
-// Check if user is authenticated (for serving HTML pages)
 function checkAuth(req, res, next) {
     if (req.session && req.session.user) {
         next();
@@ -26,8 +19,6 @@ function checkAuth(req, res, next) {
         res.redirect('/login.html');
     }
 }
-
-// Check if user is admin (for serving HTML pages)
 function checkAdmin(req, res, next) {
     if (req.session && req.session.user && req.session.user.role && req.session.user.role.toLowerCase() === 'admin') {
         next();

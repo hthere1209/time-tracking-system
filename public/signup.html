@@ -121,7 +121,6 @@
     <script>
         const API_BASE = '/api';
 
-        // Check if already logged in
         checkAuthStatus();
 
         document.getElementById('signupForm').addEventListener('submit', handleSignup);
@@ -132,7 +131,6 @@
                 const data = await response.json();
                 
                 if (data.authenticated) {
-                    // Redirect based on role
                     if (data.user.role && data.user.role.toLowerCase() === 'admin') {
                         window.location.href = '/admin';
                     } else {
@@ -152,13 +150,11 @@
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
 
-            // Validate passwords match
             if (password !== confirmPassword) {
                 showAlert('Passwords do not match', 'error');
                 return;
             }
 
-            // Validate password length
             if (password.length < 6) {
                 showAlert('Password must be at least 6 characters long', 'error');
                 return;
@@ -177,7 +173,6 @@
                 if (response.ok) {
                     showAlert('Account created successfully! Redirecting...', 'success');
                     
-                    // Redirect to users page (new users are regular users by default)
                     setTimeout(() => {
                         window.location.href = '/users';
                     }, 1500);

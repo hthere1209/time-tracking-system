@@ -105,7 +105,6 @@
     <script>
         const API_BASE = '/api';
 
-        // Check if already logged in
         checkAuthStatus();
 
         document.getElementById('loginForm').addEventListener('submit', handleLogin);
@@ -116,7 +115,6 @@
                 const data = await response.json();
                 
                 if (data.authenticated) {
-                    // Redirect based on role
                     if (data.user.role && data.user.role.toLowerCase() === 'admin') {
                         window.location.href = '/admin';
                     } else {
@@ -147,7 +145,6 @@
                 if (response.ok) {
                     showAlert('Login successful! Redirecting...', 'success');
                     
-                    // Redirect based on role
                     setTimeout(() => {
                         if (data.user.role && data.user.role.toLowerCase() === 'admin') {
                             window.location.href = '/admin';

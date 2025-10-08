@@ -8,7 +8,6 @@ async function createTablesIfNotExist() {
         
         // Verify we're connected to the right database
         const dbCheck = await pool.request().query('SELECT DB_NAME() AS CurrentDB');
-        console.log(`Checking database tables in: ${dbCheck.recordset[0].CurrentDB}`);
 
         // Check which tables exist
         const tablesCheck = await pool.request().query(`
@@ -22,16 +21,12 @@ async function createTablesIfNotExist() {
         const missingTables = requiredTables.filter(table => !existingTables.includes(table));
 
         if (missingTables.length === 0) {
-            console.log('✓ All required tables exist.');
             return true;
         }
 
-        console.log(`⚠️  Missing tables: ${missingTables.join(', ')}`);
-        console.log('🔧 Creating missing tables...');
 
         // Create Office Locations Table
         if (!existingTables.includes('OfficeLocations')) {
-            console.log('  → Creating OfficeLocations table...');
             await pool.request().query(`
                 CREATE TABLE dbo.OfficeLocations (
                     OfficeLocationID INT IDENTITY(1,1) PRIMARY KEY,
@@ -45,7 +40,6 @@ async function createTablesIfNotExist() {
 
         // Create Staff Table
         if (!existingTables.includes('Staff')) {
-            console.log('  → Creating Staff table...');
             await pool.request().query(`
                 CREATE TABLE dbo.Staff (
                     StaffID INT IDENTITY(1,1) PRIMARY KEY,
@@ -61,7 +55,6 @@ async function createTablesIfNotExist() {
 
         // Create Clients Table
         if (!existingTables.includes('Clients')) {
-            console.log('  → Creating Clients table...');
             await pool.request().query(`
                 CREATE TABLE dbo.Clients (
                     ClientID INT IDENTITY(1,1) PRIMARY KEY,
@@ -78,7 +71,6 @@ async function createTablesIfNotExist() {
 
         // Create Time Entries Table (only if Staff, Clients, and OfficeLocations exist)
         if (!existingTables.includes('TimeEntries')) {
-            console.log('  → Creating TimeEntries table...');
             await pool.request().query(`
                 CREATE TABLE dbo.TimeEntries (
                     TimeEntryID INT IDENTITY(1,1) PRIMARY KEY,
@@ -110,7 +102,6 @@ async function createTablesIfNotExist() {
 
         // Create Users Table
         if (!existingTables.includes('Users')) {
-            console.log('  → Creating Users table...');
             await pool.request().query(`
                 CREATE TABLE dbo.Users (
                     UserID INT IDENTITY(1,1) PRIMARY KEY,
@@ -131,12 +122,9 @@ async function createTablesIfNotExist() {
             `);
         }
 
-        console.log('✓ All required tables created successfully!');
-        console.log('');
         return true;
 
     } catch (err) {
-        console.error('❌ Error creating tables:', err.message);
         throw err;
     }
 }
@@ -153,7 +141,6 @@ async function seedAdminUser() {
         `);
 
         if (tableCheck.recordset[0].TableExists === 0) {
-            console.log('⚠️  Users table does not exist yet.');
             return; // Table will be created by createTablesIfNotExist in seedDatabase
         }
 
@@ -165,11 +152,9 @@ async function seedAdminUser() {
         `);
 
         if (adminCheck.recordset[0].AdminCount > 0) {
-            console.log('✓ Admin user already exists.');
             return;
         }
 
-        console.log('Creating default admin user...');
         
         // Hash the default password
         const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
@@ -185,16 +170,9 @@ async function seedAdminUser() {
                 VALUES (@username, @email, @passwordHash, @role)
             `);
 
-        console.log('✓ Default admin user created successfully!');
-        console.log('  Username: admin');
-        console.log('  Password: admin123');
-        console.log('  ⚠️  Please change this password after first login!');
-        console.log('');
     } catch (err) {
         if (err.message.includes('Cannot insert duplicate key')) {
-            console.log('✓ Admin user already exists.');
         } else {
-            console.error('Error seeding admin user:', err.message);
             throw err;
         }
     }
@@ -203,8 +181,6 @@ async function seedAdminUser() {
 async function seedDatabase() {
     try {
         // First, ensure all tables exist
-        console.log('');
-        console.log('=== Initializing Database ===');
         const tablesCreated = await createTablesIfNotExist();
         
         // Verify Users table exists before seeding admin
@@ -216,14 +192,12 @@ async function seedDatabase() {
         `);
         
         if (usersTableCheck.recordset[0].TableExists === 0) {
-            console.error('❌ Users table was not created successfully. Cannot seed admin user.');
             throw new Error('Users table missing after table creation attempt');
         }
         
         // Then, ensure admin user exists
         await seedAdminUser();
         
-        console.log('Checking database for existing data...');
         
         // Check if data already exists
         const checkResult = await pool.request().query(`
@@ -236,14 +210,11 @@ async function seedDatabase() {
         const counts = checkResult.recordset[0];
         
         if (counts.OfficeCount > 0 || counts.StaffCount > 0 || counts.ClientCount > 0) {
-            console.log('✓ Database already has data. Skipping seed.');
             return;
         }
         
-        console.log('Database is empty. Seeding sample data...');
         
         // Insert Office Locations
-        console.log('  → Adding office locations...');
         await pool.request().query(`
             INSERT INTO OfficeLocations (LocationName, Address) VALUES
             ('Downtown Office', '123 Main St, Suite 100'),
@@ -252,7 +223,6 @@ async function seedDatabase() {
         `);
         
         // Insert Staff Members
-        console.log('  → Adding staff members...');
         await pool.request().query(`
             INSERT INTO Staff (StaffName, StaffRole, HourlyCostRate, Email) VALUES
             ('John Smith', 'Developer', 35.00, 'john.smith@company.com'),
@@ -263,7 +233,6 @@ async function seedDatabase() {
         `);
         
         // Insert Clients
-        console.log('  → Adding clients...');
         await pool.request().query(`
             INSERT INTO Clients (ClientName, HourlyBillingRate, ContactEmail, ContactPhone, Address) VALUES
             ('ABC Corporation', 95.00, 'alice@abccorp.com', '555-0101', '100 ABC Plaza'),
@@ -274,7 +243,6 @@ async function seedDatabase() {
         `);
         
         // Insert sample time entries from past few days
-        console.log('  → Adding sample time entries...');
         
         const today = new Date();
         const daysAgo5 = new Date(today);
@@ -396,21 +364,8 @@ async function seedDatabase() {
                 VALUES (@staffId, @clientId, @officeId, @workDate, @timeStarted, @timeFinished, @description, 0)
             `);
         
-        console.log('✓ Sample data seeded successfully!');
-        console.log('  • 3 Office Locations');
-        console.log('  • 5 Staff Members');
-        console.log('  • 5 Clients');
-        console.log('  • 7 Sample Time Entries');
-        console.log('');
-        console.log('You can now:');
-        console.log('  1. Login at http://localhost:3000/login.html');
-        console.log('  2. View admin dashboard at http://localhost:3000/admin');
-        console.log('  3. Punch in/out at http://localhost:3000');
-        console.log('  4. Generate reports at http://localhost:3000/reports');
-        console.log('');
         
     } catch (err) {
-        console.error('Error seeding database:', err.message);
         throw err;
     }
 }

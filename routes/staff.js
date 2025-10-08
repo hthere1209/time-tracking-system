@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 
-// Get all active staff members
 router.get('/', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -25,7 +24,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get specific staff member (with hidden fields for admin)
 router.get('/:id', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -55,7 +53,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Create new staff member
 router.post('/', async (req, res) => {
     try {
         const { staffName, staffRole, costRate, email } = req.body;
@@ -86,7 +83,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Update staff member
 router.put('/:id', async (req, res) => {
     try {
         const { staffName, staffRole, costRate, email, isActive } = req.body;
@@ -116,7 +112,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Check if staff is currently punched in
 router.get('/:id/punch-status', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -148,7 +143,6 @@ router.get('/:id/punch-status', async (req, res) => {
     }
 });
 
-// Delete staff member (soft delete - set IsActive = 0)
 router.delete('/:id', async (req, res) => {
     try {
         const pool = await getConnection();

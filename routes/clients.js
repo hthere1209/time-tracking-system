@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 
-// Get all active clients
 router.get('/', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -26,7 +25,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get specific client (with hidden fields for admin)
 router.get('/:id', async (req, res) => {
     try {
         const pool = await getConnection();
@@ -57,7 +55,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Create new client
 router.post('/', async (req, res) => {
     try {
         const { clientName, billingRate, contactEmail, contactPhone, address } = req.body;
@@ -89,7 +86,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Update client
 router.put('/:id', async (req, res) => {
     try {
         const { clientName, billingRate, contactEmail, contactPhone, address, isActive } = req.body;
@@ -121,7 +117,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Delete client (soft delete - set IsActive = 0)
 router.delete('/:id', async (req, res) => {
     try {
         const pool = await getConnection();

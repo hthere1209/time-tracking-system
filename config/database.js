@@ -23,11 +23,9 @@ let pool = null;
 
 async function ensureDatabaseExists() {
     try {
-        // Connect to master database first
         const masterConfig = { ...config, database: 'master' };
         const masterPool = await sql.connect(masterConfig);
         
-        // Check if TimeTrackDB exists
         const result = await masterPool.request().query(`
             SELECT name FROM sys.databases WHERE name = '${config.database}'
         `);
@@ -36,27 +34,22 @@ async function ensureDatabaseExists() {
             console.log(`⚠️  Database '${config.database}' does not exist.`);
             console.log(`🔧 Creating database '${config.database}'...`);
             
-            // Create the database
             await masterPool.request().query(`CREATE DATABASE ${config.database}`);
             console.log(`✓ Database '${config.database}' created successfully!`);
         }
         
-        // Close master connection
         await masterPool.close();
         
     } catch (err) {
         console.error('Error checking/creating database:', err.message);
-        // If this fails, we'll try to connect anyway (maybe user doesn't have permission)
     }
 }
 
 async function getConnection() {
     try {
         if (!pool) {
-            // First ensure the database exists
             await ensureDatabaseExists();
             
-            // Then connect to the database
             pool = await sql.connect(config);
             console.log('Connected to SQL Server database');
         }
