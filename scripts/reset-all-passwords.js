@@ -12,16 +12,12 @@ const bcrypt = require('bcrypt');
 
 async function resetAllPasswords() {
     try {
-        console.log('========================================');
-        console.log('   Reset All User Passwords');
-        console.log('========================================\n');
         
         const pool = await getConnection();
         
         // Get all users
         const users = await pool.request().query('SELECT UserID, Username, Role FROM Users');
         
-        console.log(`Found ${users.recordset.length} users\n`);
         
         for (const user of users.recordset) {
             let newPassword;
@@ -42,20 +38,13 @@ async function resetAllPasswords() {
                 .input('passwordHash', sql.NVarChar, passwordHash)
                 .query('UPDATE Users SET PasswordHash = @passwordHash WHERE UserID = @userId');
             
-            console.log(`✓ ${user.Username} - Password set to: ${newPassword}`);
         }
         
-        console.log('\n========================================');
-        console.log('✅ All passwords reset!');
-        console.log('========================================\n');
-        console.log('User Credentials:');
         
         users.recordset.forEach(user => {
             const password = user.Username === 'admin' ? 'admin123' : user.Username + '123';
-            console.log(`  ${user.Username} / ${password} (${user.Role})`);
         });
         
-        console.log('\n⚠️  Remember to change these passwords after logging in!\n');
 
     } catch (err) {
         console.error('\n❌ Error:', err.message);

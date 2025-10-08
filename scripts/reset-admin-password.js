@@ -12,9 +12,6 @@ const bcrypt = require('bcrypt');
 
 async function resetAdminPassword() {
     try {
-        console.log('========================================');
-        console.log('   Reset Admin Password');
-        console.log('========================================\n');
         
         const pool = await getConnection();
         
@@ -37,8 +34,6 @@ async function resetAdminPassword() {
             `);
 
         if (result.rowsAffected[0] === 0) {
-            console.log('❌ Admin user not found!');
-            console.log('\nCreating new admin user...');
             
             await pool.request()
                 .input('username', sql.NVarChar, 'admin')
@@ -50,19 +45,9 @@ async function resetAdminPassword() {
                     VALUES (@username, @email, @passwordHash, @role)
                 `);
             
-            console.log('✓ Admin user created!');
         } else {
-            console.log('✓ Admin password reset successfully!');
         }
 
-        console.log('\n========================================');
-        console.log('   Default Admin Credentials');
-        console.log('========================================');
-        console.log('Username: admin');
-        console.log('Password: admin123');
-        console.log('========================================\n');
-        console.log('⚠️  Please change this password after login!\n');
-        console.log('Login at: http://localhost:3000/login.html\n');
 
     } catch (err) {
         console.error('\n❌ Error:', err.message);

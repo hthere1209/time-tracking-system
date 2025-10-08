@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: timetrack-sqlserver-dev
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-dev-data:/var/opt/mssql
+    networks:
+      - timetrack-dev-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Node.js Application (Development mode with hot reload)
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: timetrack-app-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - SESSION_SECRET=dev-secret-key
+      - DB_SERVER=sqlserver
+      - DB_DATABASE=TimeTrackDB
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd
+      - DB_PORT=1433
+      - DB_ENCRYPT=false
+      - DB_TRUST_SERVER_CERTIFICATE=true
+      - ADMIN_USERNAME=admin
+      - ADMIN_EMAIL=admin@timetrack.com
+      - ADMIN_PASSWORD=admin123
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - timetrack-dev-network
+    restart: unless-stopped
+
+volumes:
+  sqlserver-dev-data:
+
+networks:
+  timetrack-dev-network:
+    driver: bridge
+

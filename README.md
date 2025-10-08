@@ -2,6 +2,34 @@
 
 A comprehensive time tracking system with Microsoft SQL Server backend and modern web interface for managing staff time entries, clients, and generating detailed reports.
 
+## 🐳 Quick Start with Docker (Recommended)
+
+The easiest way to run this application on any PC is using Docker. No need to install SQL Server or configure databases manually!
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed on your system
+
+### Run with Docker
+
+1. **Clone or copy the project to your PC**
+
+2. **Start the application:**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Access the application at:** http://localhost:3000
+
+That's it! The application and database are now running. The database will be automatically created and seeded with sample data.
+
+**Default Login:**
+- Username: `admin`
+- Password: `admin123`
+
+For detailed Docker instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
+
+---
+
 ## Features
 
 ### Core Functionality
@@ -56,13 +84,13 @@ A comprehensive time tracking system with Microsoft SQL Server backend and moder
    npm install
    ```
 
-3. Create a `.env` file in the root directory (copy from `.env.example`):
+3. Create a `.env` file in the root directory (copy from `env.example`):
    ```bash
    # Windows
-   copy .env.example .env
+   copy env.example .env
    
    # Linux/Mac
-   cp .env.example .env
+   cp env.example .env
    ```
 
 4. Edit the `.env` file with your database credentials:

@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: timetrack-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - timetrack-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Node.js Application
+  app:
+    build: .
+    container_name: timetrack-app
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - SESSION_SECRET=change-this-to-a-secure-random-string
+      - DB_SERVER=sqlserver
+      - DB_DATABASE=TimeTrackDB
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd
+      - DB_PORT=1433
+      - DB_ENCRYPT=false
+      - DB_TRUST_SERVER_CERTIFICATE=true
+      - ADMIN_USERNAME=admin
+      - ADMIN_EMAIL=admin@timetrack.com
+      - ADMIN_PASSWORD=admin123
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - timetrack-network
+    restart: unless-stopped
+
+volumes:
+  sqlserver-data:
+
+networks:
+  timetrack-network:
+    driver: bridge
+

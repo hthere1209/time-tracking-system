@@ -1,0 +1,21 @@
+# Use Node.js LTS version
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm install
+
+# Copy application files
+COPY . .
+
+# Expose the application port
+EXPOSE 3000
+
+# Start the application with nodemon for hot reload (with database wait)
+CMD ["sh", "-c", "node wait-for-db.js && npm run dev"]
+
