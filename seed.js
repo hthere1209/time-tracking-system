@@ -1,5 +1,145 @@
 const { getConnection, sql } = require('./config/database');
 const bcrypt = require('bcrypt');
+const cors = require('cors');
+
+async function createTablesIfNotExist() {
+    try {
+        const pool = await getConnection();
+        
+        // Verify we're connected to the right database
+        const dbCheck = await pool.request().query('SELECT DB_NAME() AS CurrentDB');
+        console.log(`Checking database tables in: ${dbCheck.recordset[0].CurrentDB}`);
+
+        // Check which tables exist
+        const tablesCheck = await pool.request().query(`
+            SELECT TABLE_NAME
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'dbo'
+        `);
+
+        const existingTables = tablesCheck.recordset.map(r => r.TABLE_NAME);
+        const requiredTables = ['OfficeLocations', 'Staff', 'Clients', 'TimeEntries', 'Users'];
+        const missingTables = requiredTables.filter(table => !existingTables.includes(table));
+
+        if (missingTables.length === 0) {
+            console.log('✓ All required tables exist.');
+            return true;
+        }
+
+        console.log(`⚠️  Missing tables: ${missingTables.join(', ')}`);
+        console.log('🔧 Creating missing tables...');
+
+        // Create Office Locations Table
+        if (!existingTables.includes('OfficeLocations')) {
+            console.log('  → Creating OfficeLocations table...');
+            await pool.request().query(`
+                CREATE TABLE dbo.OfficeLocations (
+                    OfficeLocationID INT IDENTITY(1,1) PRIMARY KEY,
+                    LocationName NVARCHAR(100) NOT NULL,
+                    Address NVARCHAR(200),
+                    IsActive BIT DEFAULT 1,
+                    CreatedDate DATETIME DEFAULT GETDATE()
+                );
+            `);
+        }
+
+        // Create Staff Table
+        if (!existingTables.includes('Staff')) {
+            console.log('  → Creating Staff table...');
+            await pool.request().query(`
+                CREATE TABLE dbo.Staff (
+                    StaffID INT IDENTITY(1,1) PRIMARY KEY,
+                    StaffName NVARCHAR(100) NOT NULL,
+                    StaffRole NVARCHAR(100) NOT NULL,
+                    HourlyCostRate DECIMAL(10,2) NOT NULL,
+                    Email NVARCHAR(100),
+                    IsActive BIT DEFAULT 1,
+                    CreatedDate DATETIME DEFAULT GETDATE()
+                );
+            `);
+        }
+
+        // Create Clients Table
+        if (!existingTables.includes('Clients')) {
+            console.log('  → Creating Clients table...');
+            await pool.request().query(`
+                CREATE TABLE dbo.Clients (
+                    ClientID INT IDENTITY(1,1) PRIMARY KEY,
+                    ClientName NVARCHAR(100) NOT NULL,
+                    HourlyBillingRate DECIMAL(10,2) NOT NULL,
+                    ContactEmail NVARCHAR(100),
+                    ContactPhone NVARCHAR(20),
+                    Address NVARCHAR(200),
+                    IsActive BIT DEFAULT 1,
+                    CreatedDate DATETIME DEFAULT GETDATE()
+                );
+            `);
+        }
+
+        // Create Time Entries Table (only if Staff, Clients, and OfficeLocations exist)
+        if (!existingTables.includes('TimeEntries')) {
+            console.log('  → Creating TimeEntries table...');
+            await pool.request().query(`
+                CREATE TABLE dbo.TimeEntries (
+                    TimeEntryID INT IDENTITY(1,1) PRIMARY KEY,
+                    StaffID INT NOT NULL,
+                    ClientID INT NOT NULL,
+                    LocationID INT NOT NULL,
+                    WorkDate DATE NOT NULL,
+                    TimeStarted DATETIME NOT NULL,
+                    TimeFinished DATETIME NULL,
+                    WorkDescription NVARCHAR(500),
+                    TotalHours AS DATEDIFF(MINUTE, TimeStarted, ISNULL(TimeFinished, GETDATE())) / 60.0,
+                    IsPunchedIn BIT DEFAULT 1,
+                    CreatedDate DATETIME DEFAULT GETDATE(),
+                    ModifiedDate DATETIME DEFAULT GETDATE(),
+                    FOREIGN KEY (StaffID) REFERENCES dbo.Staff(StaffID),
+                    FOREIGN KEY (ClientID) REFERENCES dbo.Clients(ClientID),
+                    FOREIGN KEY (LocationID) REFERENCES dbo.OfficeLocations(OfficeLocationID)
+                );
+            `);
+
+            // Create indexes
+            await pool.request().query(`
+                CREATE INDEX IX_TimeEntries_StaffID ON dbo.TimeEntries(StaffID);
+                CREATE INDEX IX_TimeEntries_ClientID ON dbo.TimeEntries(ClientID);
+                CREATE INDEX IX_TimeEntries_WorkDate ON dbo.TimeEntries(WorkDate);
+                CREATE INDEX IX_TimeEntries_IsPunchedIn ON dbo.TimeEntries(IsPunchedIn);
+            `);
+        }
+
+        // Create Users Table
+        if (!existingTables.includes('Users')) {
+            console.log('  → Creating Users table...');
+            await pool.request().query(`
+                CREATE TABLE dbo.Users (
+                    UserID INT IDENTITY(1,1) PRIMARY KEY,
+                    Username NVARCHAR(50) UNIQUE NOT NULL,
+                    Email NVARCHAR(100) UNIQUE NOT NULL,
+                    PasswordHash NVARCHAR(255) NOT NULL,
+                    Role NVARCHAR(20) NOT NULL DEFAULT 'user',
+                    IsActive BIT DEFAULT 1,
+                    CreatedDate DATETIME DEFAULT GETDATE(),
+                    LastLoginDate DATETIME NULL
+                );
+            `);
+
+            // Create indexes
+            await pool.request().query(`
+                CREATE INDEX IX_Users_Username ON dbo.Users(Username);
+                CREATE INDEX IX_Users_Email ON dbo.Users(Email);
+            `);
+        }
+
+        console.log('✓ All required tables created successfully!');
+        console.log('');
+        return true;
+
+    } catch (err) {
+        console.error('❌ Error creating tables:', err.message);
+        throw err;
+    }
+}
 
 async function seedAdminUser() {
     try {
@@ -13,8 +153,8 @@ async function seedAdminUser() {
         `);
 
         if (tableCheck.recordset[0].TableExists === 0) {
-            console.log('⚠️  Users table does not exist. Please run database/users-schema.sql');
-            return;
+            console.log('⚠️  Users table does not exist yet.');
+            return; // Table will be created by createTablesIfNotExist in seedDatabase
         }
 
         // Check if any admin user exists
@@ -32,12 +172,12 @@ async function seedAdminUser() {
         console.log('Creating default admin user...');
         
         // Hash the default password
-        const passwordHash = await bcrypt.hash('admin123', 10);
+        const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
 
         // Create admin user
         await pool.request()
-            .input('username', sql.NVarChar, 'admin')
-            .input('email', sql.NVarChar, 'admin@timetrack.com')
+            .input('username', sql.NVarChar, process.env.ADMIN_USERNAME)
+            .input('email', sql.NVarChar, process.env.ADMIN_EMAIL)
             .input('passwordHash', sql.NVarChar, passwordHash)
             .input('role', sql.NVarChar, 'admin')
             .query(`
@@ -55,17 +195,35 @@ async function seedAdminUser() {
             console.log('✓ Admin user already exists.');
         } else {
             console.error('Error seeding admin user:', err.message);
+            throw err;
         }
     }
 }
 
 async function seedDatabase() {
     try {
-        // First, ensure admin user exists
+        // First, ensure all tables exist
+        console.log('');
+        console.log('=== Initializing Database ===');
+        const tablesCreated = await createTablesIfNotExist();
+        
+        // Verify Users table exists before seeding admin
+        const pool = await getConnection();
+        const usersTableCheck = await pool.request().query(`
+            SELECT COUNT(*) AS TableExists
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_NAME = 'Users' AND TABLE_SCHEMA = 'dbo'
+        `);
+        
+        if (usersTableCheck.recordset[0].TableExists === 0) {
+            console.error('❌ Users table was not created successfully. Cannot seed admin user.');
+            throw new Error('Users table missing after table creation attempt');
+        }
+        
+        // Then, ensure admin user exists
         await seedAdminUser();
         
         console.log('Checking database for existing data...');
-        const pool = await getConnection();
         
         // Check if data already exists
         const checkResult = await pool.request().query(`
@@ -257,5 +415,5 @@ async function seedDatabase() {
     }
 }
 
-module.exports = { seedDatabase, seedAdminUser };
+module.exports = { seedDatabase, seedAdminUser, createTablesIfNotExist };
 
