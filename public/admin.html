@@ -422,7 +422,10 @@
                         <td>$${s.HourlyCostRate.toFixed(2)}/hr</td>
                         <td>${s.Email || '-'}</td>
                         <td><span class="status-badge ${s.IsActive ? 'status-punched-in' : 'status-completed'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
-                        <td><button class="btn btn-danger btn-small" onclick="deleteStaff(${s.StaffID}, '${s.StaffName}')"><i class="fas fa-trash"></i> Delete</button></td>
+                        <td>
+                            <button class="btn btn-primary btn-small" onclick='editStaff(${JSON.stringify(s)})'><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteStaff(${s.StaffID}, '${s.StaffName}')"><i class="fas fa-trash"></i> Delete</button>
+                        </td>
                     </tr>
                 `).join('');
                 document.getElementById("allStaffSection").style.display = "block";
@@ -453,7 +456,10 @@
                         <td>${c.ContactPhone || '-'}</td>
                         <td>${c.Address || '-'}</td>
                         <td><span class="status-badge ${c.IsActive ? 'status-punched-in' : 'status-completed'}">${c.IsActive ? 'Active' : 'Inactive'}</span></td>
-                        <td><button class="btn btn-danger btn-small" onclick="deleteClient(${c.ClientID}, '${c.ClientName}')"><i class="fas fa-trash"></i> Delete</button></td>
+                        <td>
+                            <button class="btn btn-primary btn-small" onclick='editClient(${JSON.stringify(c)})'><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteClient(${c.ClientID}, '${c.ClientName}')"><i class="fas fa-trash"></i> Delete</button>
+                        </td>
                     </tr>
                 `).join('');
                 document.getElementById("allClientsSection").style.display = "block";
@@ -481,6 +487,8 @@
             }
         }
 
+        let editingStaffId = null;
+
         async function handleAddStaff(e) {
             e.preventDefault();
 
@@ -492,8 +500,11 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE}/staff`, {
-                    method: 'POST',
+                const url = editingStaffId ? `${API_BASE}/staff/${editingStaffId}` : `${API_BASE}/staff`;
+                const method = editingStaffId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify(data)
@@ -502,16 +513,30 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    showAlert('Staff member added successfully!', 'success');
+                    showAlert(editingStaffId ? 'Staff member updated successfully!' : 'Staff member added successfully!', 'success');
                     hideModal('staffModal');
                     document.getElementById('staffForm').reset();
+                    editingStaffId = null;
+                    viewAllStaff();
                 } else {
-                    showAlert(result.error || 'Failed to add staff member', 'error');
+                    showAlert(result.error || 'Failed to save staff member', 'error');
                 }
             } catch (error) {
                 showAlert('Error: ' + error.message, 'error');
             }
         }
+
+        function editStaff(staff) {
+            editingStaffId = staff.StaffID;
+            document.querySelector('#staffModal .card-header').textContent = 'Edit Staff Member';
+            document.getElementById('staffName').value = staff.StaffName;
+            document.getElementById('staffRole').value = staff.StaffRole;
+            document.getElementById('staffCostRate').value = staff.HourlyCostRate;
+            document.getElementById('staffEmail').value = staff.Email || '';
+            showModal('staffModal');
+        }
+
+        let editingClientId = null;
 
         async function handleAddClient(e) {
             e.preventDefault();
@@ -525,8 +550,11 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE}/clients`, {
-                    method: 'POST',
+                const url = editingClientId ? `${API_BASE}/clients/${editingClientId}` : `${API_BASE}/clients`;
+                const method = editingClientId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify(data)
@@ -535,15 +563,28 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    showAlert('Client added successfully!', 'success');
+                    showAlert(editingClientId ? 'Client updated successfully!' : 'Client added successfully!', 'success');
                     hideModal('clientModal');
                     document.getElementById('clientForm').reset();
+                    editingClientId = null;
+                    viewAllClients();
                 } else {
-                    showAlert(result.error || 'Failed to add client', 'error');
+                    showAlert(result.error || 'Failed to save client', 'error');
                 }
             } catch (error) {
                 showAlert('Error: ' + error.message, 'error');
             }
+        }
+
+        function editClient(client) {
+            editingClientId = client.ClientID;
+            document.querySelector('#clientModal .card-header').textContent = 'Edit Client';
+            document.getElementById('clientName').value = client.ClientName;
+            document.getElementById('clientBillingRate').value = client.HourlyBillingRate;
+            document.getElementById('clientEmail').value = client.ContactEmail || '';
+            document.getElementById('clientPhone').value = client.ContactPhone || '';
+            document.getElementById('clientAddress').value = client.Address || '';
+            showModal('clientModal');
         }
 
         async function handleAddOffice(e) {
@@ -808,6 +849,16 @@
 
         function hideModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
+            if (modalId === 'staffModal') {
+                editingStaffId = null;
+                document.querySelector('#staffModal .card-header').textContent = 'Add New Staff Member';
+                document.getElementById('staffForm').reset();
+            }
+            if (modalId === 'clientModal') {
+                editingClientId = null;
+                document.querySelector('#clientModal .card-header').textContent = 'Add New Client';
+                document.getElementById('clientForm').reset();
+            }
         }
 
         function hideModalOnOverlay(event, modalId) {
