@@ -64,6 +64,44 @@ router.post('/', async (req, res) => {
         }
         
         const pool = await getConnection();
+        
+        const existingClient = await pool.request()
+            .input('clientName', sql.NVarChar, clientName)
+            .query(`
+                SELECT ClientID, IsActive 
+                FROM Clients 
+                WHERE ClientName = @clientName
+            `);
+        
+        if (existingClient.recordset.length > 0) {
+            const client = existingClient.recordset[0];
+            
+            if (!client.IsActive) {
+                await pool.request()
+                    .input('clientId', sql.Int, client.ClientID)
+                    .input('billingRate', sql.Decimal(10, 2), billingRate)
+                    .input('contactEmail', sql.NVarChar, contactEmail || null)
+                    .input('contactPhone', sql.NVarChar, contactPhone || null)
+                    .input('address', sql.NVarChar, address || null)
+                    .query(`
+                        UPDATE Clients
+                        SET HourlyBillingRate = @billingRate,
+                            ContactEmail = @contactEmail,
+                            ContactPhone = @contactPhone,
+                            Address = @address,
+                            IsActive = 1
+                        WHERE ClientID = @clientId
+                    `);
+                
+                return res.status(200).json({ 
+                    message: 'Client reactivated successfully',
+                    clientId: client.ClientID
+                });
+            } else {
+                return res.status(409).json({ error: 'Client with this name already exists' });
+            }
+        }
+        
         const result = await pool.request()
             .input('clientName', sql.NVarChar, clientName)
             .input('billingRate', sql.Decimal(10, 2), billingRate)

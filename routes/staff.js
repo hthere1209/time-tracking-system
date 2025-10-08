@@ -62,6 +62,42 @@ router.post('/', async (req, res) => {
         }
         
         const pool = await getConnection();
+        
+        const existingStaff = await pool.request()
+            .input('staffName', sql.NVarChar, staffName)
+            .query(`
+                SELECT StaffID, IsActive 
+                FROM Staff 
+                WHERE StaffName = @staffName
+            `);
+        
+        if (existingStaff.recordset.length > 0) {
+            const staff = existingStaff.recordset[0];
+            
+            if (!staff.IsActive) {
+                await pool.request()
+                    .input('staffId', sql.Int, staff.StaffID)
+                    .input('staffRole', sql.NVarChar, staffRole)
+                    .input('costRate', sql.Decimal(10, 2), costRate)
+                    .input('email', sql.NVarChar, email || null)
+                    .query(`
+                        UPDATE Staff
+                        SET StaffRole = @staffRole,
+                            HourlyCostRate = @costRate,
+                            Email = @email,
+                            IsActive = 1
+                        WHERE StaffID = @staffId
+                    `);
+                
+                return res.status(200).json({ 
+                    message: 'Staff member reactivated successfully',
+                    staffId: staff.StaffID
+                });
+            } else {
+                return res.status(409).json({ error: 'Staff member with this name already exists' });
+            }
+        }
+        
         const result = await pool.request()
             .input('staffName', sql.NVarChar, staffName)
             .input('staffRole', sql.NVarChar, staffRole)
