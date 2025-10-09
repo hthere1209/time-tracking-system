@@ -2,31 +2,47 @@
 
 A comprehensive time tracking system with Microsoft SQL Server backend and modern web interface for managing staff time entries, clients, and generating detailed reports.
 
-## 🐳 Quick Start with Docker (Recommended)
+## 🚀 Deployment Options
 
-The easiest way to run this application on any PC is using Docker. No need to install SQL Server or configure databases manually!
+Choose the deployment method that best fits your environment:
 
-### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed on your system
+### Option 1: IIS with Local SQL Server (Recommended for Windows Production)
+**Best for:** Small to medium organizations running Windows (1-50 users)
+- ✅ Single server setup (no external database needed)
+- ✅ Free database (SQL Server Express)
+- ✅ Production-ready for internal use
+- ⏱️ Setup time: 45-60 minutes
 
-### Run with Docker
+**Quick Start:**
+1. Run `setup-iis-local.ps1` as Administrator
+2. Follow the **[IIS Local Deployment Guide](DEPLOYMENT_GUIDE_IIS_LOCAL_DB.md)**
+3. See **[Quick Reference](QUICK_REFERENCE.md)** for common tasks
 
-1. **Clone or copy the project to your PC**
+### Option 2: IIS with External SQL Server
+**Best for:** Large organizations with dedicated database server (50+ users)
+- ✅ Separate web and database servers
+- ✅ High performance and scalability
+- ⏱️ Setup time: 2-3 hours
 
-2. **Start the application:**
-   ```bash
-   docker-compose up -d
-   ```
+**Guide:** [IIS External SQL Server Deployment](DEPLOYMENT_GUIDE_IIS_SQL_SERVER.md)
 
-3. **Access the application at:** http://localhost:3000
+### Option 3: Docker (Recommended for Development/Testing)
+**Best for:** Development, testing, or quick evaluation
+- ✅ Quick setup on any platform
+- ✅ Containerized environment
+- ⏱️ Setup time: 10-15 minutes
 
-That's it! The application and database are now running. The database will be automatically created and seeded with sample data.
+**Quick Start:**
+```bash
+docker-compose up -d
+```
+Access at: http://localhost:3000
 
-**Default Login:**
-- Username: `admin`
-- Password: `admin123`
+**Default Login:** Username: `admin` | Password: `admin123`
 
-For detailed Docker instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
+---
+
+**📖 Need help choosing?** See [Deployment Options Guide](DEPLOYMENT_OPTIONS.md) for detailed comparison.
 
 ---
 
