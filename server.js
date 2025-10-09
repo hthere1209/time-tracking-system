@@ -82,18 +82,18 @@ app.listen(PORT, async () => {
     console.log('TimeTrack Server Started');
     console.log(`Server: http://localhost:${PORT}`);
 
-    // try {
-    //     await seedDatabase();
-    // } catch (err) {
-    //     console.error('⚠ Failed to seed database:', err.message);
-    //     console.error('Server will continue running, but you may need to add data manually.');
-    // }
+    try {
+        await seedDatabase();
+    } catch (err) {
+        console.error('⚠ Failed to seed database:', err.message);
+        console.error('Server will continue running, but you may need to add data manually.');
+    }
 });
 
 process.on('SIGINT', async () => {
     console.log('\nShutting down gracefully...');
-    // const { closeConnection } = require('./config/database');
-    // await closeConnection();
+    const { closeConnection } = require('./config/database');
+    await closeConnection();
     process.exit(0);
 });
 
